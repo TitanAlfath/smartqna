@@ -29,15 +29,23 @@ export function renderLandingPage() {
       <section class="max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-12 lg:py-14">
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
           <!-- Left Column (7 Cols): Cupertino Typography & Capsule Controls -->
-          <div class="lg:col-span-7 space-y-6">
-            <h1 class="text-3xl sm:text-5xl font-bold tracking-tight text-[#0F172A] leading-[1.1]">
-              Diskusi interaktif dalam antarmuka
-              <span class="font-serif italic font-normal text-[#2563EB]">Liquid Glass</span>
-              yang responsif.
-            </h1>
+          <div class="lg:col-span-7 space-y-5">
+            <div class="space-y-2.5">
+              <p class="text-sm sm:text-base font-semibold tracking-tight text-[#2563EB]">
+                Interactive Q&amp;A Platform
+              </p>
+              <h1 class="text-3xl sm:text-5xl font-bold tracking-tight text-[#0F172A] leading-[1.1]">
+                Make Every
+                <span class="font-serif italic font-normal text-[#2563EB]">Question</span>
+                Count.
+              </h1>
+              <p class="text-base sm:text-xl font-medium text-[#0F172A]/85 leading-snug max-w-xl pt-1">
+                A new way to make discussions more engaging, interactive, and exciting.
+              </p>
+            </div>
 
-            <p class="text-slate-600 text-base sm:text-lg leading-relaxed max-w-xl">
-              Peserta mengirim pertanyaan dan memberikan dukungan suara langsung dari ponsel melalui QR Code. Pemateri mengelola sesi tanya jawab secara real-time atau mengundi pertanyaan acak di layar panggung.
+            <p class="text-slate-600 text-sm sm:text-base leading-relaxed max-w-xl">
+              SmartQ&amp;A helps you create interactive question sessions with random question selection, bringing a fresh experience to every discussion, presentation, and learning session.
             </p>
 
             <!-- Tactile Capsule Buttons -->
