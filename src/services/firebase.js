@@ -301,6 +301,44 @@ export function getAppState() {
 export function getSessionById(sessionId) {
   const state = getAppState();
   const targetId = sessionId || state.activeSessionId;
+
+  // Jika peserta membuka tautan QR Code (?session=...&title=...), pastikan sesi otomatis tersedia
+  if (sessionId && !state.sessions[sessionId] && typeof window !== 'undefined') {
+    const hash = window.location.hash || '';
+    const qIdx = hash.indexOf('?');
+    if (qIdx !== -1) {
+      const params = new URLSearchParams(hash.slice(qIdx + 1));
+      const urlSession = params.get('session');
+      if (urlSession && urlSession === sessionId) {
+        const hydrated = {
+          id: sessionId,
+          name: params.get('title') || `Sesi Q&A (${sessionId})`,
+          speaker: params.get('speaker') || 'Pemateri',
+          description: 'Sesi tanya jawab interaktif peserta dan pemateri.',
+          status: 'active',
+          allowQuestions: true,
+          allowAnonymous: true,
+          createdAt: Date.now(),
+          questions: {},
+          drawState: {
+            currentQuestionId: null,
+            isDrawing: false,
+            drawVersion: 0,
+            updatedAt: Date.now()
+          },
+          drawHistory: {}
+        };
+        const current = loadLocalDb();
+        if (!current.sessions) current.sessions = {};
+        current.sessions[sessionId] = hydrated;
+        if (!current.activeSessionId) current.activeSessionId = sessionId;
+        stateCache = current;
+        localStorage.setItem(STORAGE_KEY_DB, JSON.stringify(current));
+        state.sessions[sessionId] = hydrated;
+      }
+    }
+  }
+
   if (!targetId || !state.sessions[targetId]) {
     return state.sessionsList[0] || null;
   }

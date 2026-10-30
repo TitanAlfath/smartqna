@@ -5,15 +5,21 @@
  */
 
 import QRCode from 'qrcode';
+import { getSessionById } from '../services/firebase.js';
 
 /**
  * Membentuk URL halaman peserta untuk sesi tertentu.
- * Tetap berfungsi otomatis baik di localhost maupun setelah di-deploy ke Vercel / GitHub Pages.
+ * Tetap berfungsi otomatis baik di localhost maupun setelah di-deploy ke Netlify / Vercel / GitHub Pages.
  */
 export function getParticipantSessionUrl(sessionId) {
   const baseUrl = `${window.location.origin}${window.location.pathname}`;
   const cleanBase = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
-  return `${cleanBase}#/participant?session=${encodeURIComponent(sessionId)}`;
+  const ses = getSessionById(sessionId);
+  const params = new URLSearchParams();
+  params.set('session', sessionId);
+  if (ses && ses.name) params.set('title', ses.name);
+  if (ses && ses.speaker) params.set('speaker', ses.speaker);
+  return `${cleanBase}#/participant?${params.toString()}`;
 }
 
 /**
