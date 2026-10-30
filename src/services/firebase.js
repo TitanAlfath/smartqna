@@ -348,35 +348,83 @@ function mergeIncomingRemoteState(remote) {
 }
 
 /**
- * Mengirimkan state terbaru ke Cloud Relay (ntfy.sh) dan Firebase Realtime Database
- * agar HP Peserta dan Laptop Admin langsung tersinkronisasi lintas jaringan internet.
+ * Mengirimkan paket state berukuran ringkas (< 3.5 KB per paket) ke Cloud Relay (ntfy.sh)
+ * serta ke Firebase Realtime Database agar ratusan penanya dari HP dapat masuk
+ * secara bersamaan tanpa pernah terkena batas ukuran payload.
  */
-function broadcastStateToCloud() {
+function postCompactPacketToRelay(partialState) {
+  if (typeof window === 'undefined' || typeof fetch !== 'function') return;
+  const payload = JSON.stringify({
+    sender: clientInstanceId,
+    ts: Date.now(),
+    state: partialState
+  });
+  fetch(CLOUD_RELAY_URL, {
+    method: 'POST',
+    body: payload
+  }).catch(() => {});
+}
+
+function broadcastStateToCloud(specificSessionId = null, specificQuestionId = null) {
   const current = stateCache || loadLocalDb();
 
-  // 1. Kirim ke Cloud Relay lintas perangkat (HTTPS POST tanpa preflight)
-  if (typeof window !== 'undefined' && typeof fetch === 'function') {
-    const payload = JSON.stringify({
-      sender: clientInstanceId,
-      ts: Date.now(),
-      state: {
-        activeSessionId: current.activeSessionId,
-        sessions: current.sessions,
-        deletedSessions: current.deletedSessions,
-        votes: current.votes,
-        accounts: current.accounts,
-        activities: (current.activities || []).slice(0, 12),
-        updatedAt: current.updatedAt
-      }
+  // 1. Jika ada perubahan spesifik pada 1 pertanyaan/vote, kirim paket delta super ringan (~450 byte)
+  if (specificSessionId && current.sessions?.[specificSessionId]) {
+    const ses = current.sessions[specificSessionId];
+    const compactQuestions = {};
+    if (specificQuestionId && ses.questions?.[specificQuestionId]) {
+      compactQuestions[specificQuestionId] = ses.questions[specificQuestionId];
+    } else {
+      // Ambil maksimal 6 pertanyaan terbaru yang baru diupdate
+      Object.values(ses.questions || {})
+        .sort((a, b) => (b.updatedAt || b.createdAt || 0) - (a.updatedAt || a.createdAt || 0))
+        .slice(0, 6)
+        .forEach((q) => {
+          compactQuestions[q.id] = q;
+        });
+    }
+
+    postCompactPacketToRelay({
+      activeSessionId: current.activeSessionId,
+      sessions: {
+        [specificSessionId]: {
+          ...ses,
+          questions: compactQuestions,
+          drawHistory: {}
+        }
+      },
+      activities: (current.activities || []).slice(0, 3),
+      updatedAt: current.updatedAt
+    });
+  } else {
+    // Kirim metadata sesi, akun admin, dan hingga 5 pertanyaan terbaru per sesi agar selalu < 3.5 KB
+    const compactSessions = {};
+    Object.entries(current.sessions || {}).forEach(([sid, ses]) => {
+      const recentQs = {};
+      Object.values(ses.questions || {})
+        .sort((a, b) => (b.updatedAt || b.createdAt || 0) - (a.updatedAt || a.createdAt || 0))
+        .slice(0, 5)
+        .forEach((q) => {
+          recentQs[q.id] = q;
+        });
+      compactSessions[sid] = {
+        ...ses,
+        questions: recentQs,
+        drawHistory: {}
+      };
     });
 
-    fetch(CLOUD_RELAY_URL, {
-      method: 'POST',
-      body: payload
-    }).catch(() => {});
+    postCompactPacketToRelay({
+      activeSessionId: current.activeSessionId,
+      sessions: compactSessions,
+      deletedSessions: current.deletedSessions,
+      accounts: current.accounts,
+      activities: (current.activities || []).slice(0, 4),
+      updatedAt: current.updatedAt
+    });
   }
 
-  // 2. Kirim ke Firebase Realtime Database jika terhubung
+  // 2. Kirim juga ke Firebase Realtime Database jika terhubung
   if (db && isFirebaseConnected) {
     try {
       set(ref(db, '/'), current).catch(() => {});
@@ -628,7 +676,7 @@ export function getParticipantId() {
   return pid;
 }
 
-function logActivity(type, message) {
+function logActivity(type, message, sessionId = null, questionId = null) {
   const entry = {
     id: `act_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
     type,
@@ -640,7 +688,7 @@ function logActivity(type, message) {
   const list = Array.isArray(current.activities) ? current.activities : [];
   current.activities = [entry, ...list].slice(0, 35);
   saveLocalDb(current);
-  broadcastStateToCloud();
+  broadcastStateToCloud(sessionId, questionId);
 }
 
 /* ============================================================================
@@ -853,7 +901,7 @@ export async function submitQuestion(sessionId, { name, text, anonymous }) {
   saveLocalDb(current);
   localStorage.setItem(STORAGE_KEY_COOLDOWN, String(now));
 
-  logActivity('question', `Pertanyaan #${String(nextNumber).padStart(2, '0')} dikirim oleh ${cleanName}.`);
+  logActivity('question', `Pertanyaan #${String(nextNumber).padStart(2, '0')} dikirim oleh ${cleanName}.`, session.id, questionId);
   return newQuestion;
 }
 
@@ -903,7 +951,7 @@ export async function toggleVoteQuestion(sessionId, questionId) {
 
   current.sessions[session.id].updatedAt = Date.now();
   saveLocalDb(current);
-  broadcastStateToCloud();
+  broadcastStateToCloud(session.id, questionId);
 
   return { voted: votedResult };
 }
@@ -982,7 +1030,9 @@ export async function updateQuestionStatus(sessionId, questionId, newStatus, met
   };
   logActivity(
     'status',
-    `Pertanyaan #${String(question.number).padStart(2, '0')} (${question.name}) ditandai sebagai ${statusLabels[newStatus] || newStatus}.`
+    `Pertanyaan #${String(question.number).padStart(2, '0')} (${question.name}) ditandai sebagai ${statusLabels[newStatus] || newStatus}.`,
+    session.id,
+    questionId
   );
 }
 

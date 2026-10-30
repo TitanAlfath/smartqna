@@ -35,21 +35,32 @@ export function renderParticipantPage() {
 
   if (!session) {
     return `
-      <main class="max-w-3xl mx-auto px-4 py-12 text-center">
-        <div class="liquid-glass p-8 sm:p-10 space-y-4">
+      <main class="max-w-xl mx-auto px-4 py-12 text-center">
+        <div class="liquid-glass p-7 sm:p-10 space-y-5">
           <img src="./assets/logo.png" alt="SmartQ&A" class="w-16 h-16 object-contain mx-auto drop-shadow-sm" />
-          <div class="space-y-1">
-            <h2 class="text-xl font-bold text-[#0F172A] tracking-tight">Belum Ada Sesi Q&amp;A Aktif</h2>
+          <div class="space-y-1.5">
+            <h2 class="text-xl font-bold text-[#0F172A] tracking-tight">Gabung Sesi Tanya Jawab</h2>
             <p class="text-xs text-slate-600 max-w-md mx-auto leading-relaxed">
-              Saat ini belum ada sesi tanya jawab yang dibuka oleh penyelenggara. Jika Anda adalah admin/pemateri, klik tombol <strong>Mulai Q&amp;A</strong> di bawah ini.
+              Peserta <strong>tidak perlu login</strong> untuk bertanya. Silakan pindai QR Code di layar acara atau masukkan kode sesi di bawah ini:
             </p>
           </div>
-          <div class="flex flex-wrap items-center justify-center gap-2.5 pt-1">
-            <a href="#/admin/sessions" class="ios-btn-primary px-5 py-2.5 text-xs font-semibold inline-flex items-center gap-1.5">
-              ${Icons.plus('w-3.5 h-3.5')}
-              <span>Mulai Q&amp;A (Buat Sesi)</span>
-            </a>
-            <a href="#/" class="ios-btn-glass px-5 py-2.5 text-xs font-semibold">
+          <form id="participant-join-code-form" class="max-w-sm mx-auto flex items-center gap-2 p-1.5 rounded-full bg-white/85 border border-white shadow-sm">
+            <input
+              type="text"
+              id="participant-join-code-input"
+              required
+              placeholder="Masukkan kode sesi..."
+              class="flex-1 min-w-0 bg-transparent px-3.5 py-2 text-xs sm:text-sm font-mono uppercase text-[#0F172A] placeholder:normal-case placeholder:font-sans placeholder:text-slate-400 focus:outline-none"
+            />
+            <button
+              type="submit"
+              class="ios-btn-primary px-5 py-2.5 text-xs font-semibold shrink-0"
+            >
+              Masuk Sesi
+            </button>
+          </form>
+          <div class="pt-1">
+            <a href="#/" class="text-xs font-semibold text-slate-500 hover:text-[#0F172A] hover:underline">
               Kembali ke Beranda
             </a>
           </div>
@@ -335,6 +346,18 @@ export function renderParticipantPage() {
 }
 
 export function bindParticipantPageEvents() {
+  const joinCodeForm = document.getElementById('participant-join-code-form');
+  if (joinCodeForm) {
+    joinCodeForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const codeInput = document.getElementById('participant-join-code-input');
+      const code = (codeInput?.value || '').trim().toUpperCase().replace(/[^A-Z0-9-]/g, '');
+      if (code) {
+        navigateTo(`/participant?session=${encodeURIComponent(code)}`);
+      }
+    });
+  }
+
   const requestedId = getRequestedSessionIdFromHash();
   const session = getSessionById(requestedId);
   if (!session) return;
