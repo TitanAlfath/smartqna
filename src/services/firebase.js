@@ -1,8 +1,9 @@
 /**
  * SmartQ&A — Production Firebase Realtime Database & Authentication Service
- * Menggunakan arsitektur Optimistic Instant State + Cloud Realtime Sync sehingga
- * seluruh aksi (Login, Buat Sesi, Kirim Pertanyaan, Vote, Undian) merespons secara
- * instan (0ms) tanpa pernah tertahan koneksi jaringan.
+ * Menggunakan arsitektur Instant Local State + Safe Cloud Sync:
+ * - Seluruh aksi (Login, Buat Sesi, Kirim Pertanyaan, Vote, Undian) dieksekusi instan (0ms).
+ * - Operasi Cloud hanya dikirim apabila WebSocket Firebase benar-benar terhubung (.info/connected = true)
+ *   dan menggunakan operasi update() tunggal agar tidak pernah memblokir atau merollback state lokal.
  */
 
 import { initializeApp, getApps } from 'firebase/app';
@@ -10,7 +11,6 @@ import {
   getDatabase,
   ref,
   set,
-  push,
   update,
   remove,
   onValue
@@ -153,7 +153,7 @@ function loadLocalDb() {
           activeSessionId: parsed.activeSessionId || null,
           sessions: parsed.sessions || {},
           votes: parsed.votes || {},
-          activities: parsed.activities || []
+          activities: Array.isArray(parsed.activities) ? parsed.activities : []
         };
       }
     }
@@ -186,21 +186,19 @@ function notifyListeners() {
 }
 
 /**
- * Helper non-blocking untuk menulis ke Firebase Realtime Database di latar belakang
+ * Hanya kirim perubahan ke Firebase apabila WebSocket benar-benar sedang online (isFirebaseConnected === true).
+ * Ini mencegah SDK Firebase yang sedang offline menimpa state lokal dengan nilai parsial.
  */
 function pushCloudWrite(fn) {
-  if (!db) return;
+  if (!db || !isFirebaseConnected) return;
   try {
-    Promise.resolve(fn(db)).catch(() => {
-      // Abaikan bila jaringan/rules belum siap, data sudah aman di state lokal
-    });
+    Promise.resolve(fn(db)).catch(() => {});
   } catch {
-    // Abaikan error sinkronisasi latar belakang
+    // Ignore background sync error
   }
 }
 
 export function initDataService() {
-  // Muat state lokal seketika agar aplikasi langsung siap (0ms)
   stateCache = loadLocalDb();
 
   const config = getActiveFirebaseConfig();
@@ -211,10 +209,19 @@ export function initDataService() {
     db = getDatabase(firebaseApp);
     auth = getAuth(firebaseApp);
 
-    // Pantau status koneksi WebSocket Firebase yang sesungguhnya
     const connectedRef = ref(db, '.info/connected');
     onValue(connectedRef, (snap) => {
-      isFirebaseConnected = Boolean(snap.val());
+      const connectedNow = Boolean(snap.val());
+      const wasDisconnected = !isFirebaseConnected && connectedNow;
+      isFirebaseConnected = connectedNow;
+
+      // Saat baru terhubung ke Cloud dan ada sesi lokal, sinkronkan ke Cloud
+      if (wasDisconnected && stateCache && Object.keys(stateCache.sessions || {}).length > 0) {
+        update(ref(db, '/'), {
+          activeSessionId: stateCache.activeSessionId || null,
+          sessions: stateCache.sessions
+        }).catch(() => {});
+      }
       notifyListeners();
     });
 
@@ -222,24 +229,29 @@ export function initDataService() {
     onValue(
       rootRef,
       (snapshot) => {
+        if (!isFirebaseConnected) return;
         const val = snapshot.val();
         if (val && typeof val === 'object') {
+          const mergedSessions = {
+            ...(stateCache?.sessions || {}),
+            ...(val.sessions || {})
+          };
           const syncedState = {
-            activeSessionId: val.activeSessionId || null,
-            sessions: val.sessions || {},
-            votes: val.votes || {},
+            activeSessionId: val.activeSessionId || stateCache?.activeSessionId || null,
+            sessions: mergedSessions,
+            votes: {
+              ...(stateCache?.votes || {}),
+              ...(val.votes || {})
+            },
             activities: val.activities
               ? Array.isArray(val.activities)
                 ? val.activities
                 : Object.values(val.activities).sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
-              : []
+              : stateCache?.activities || []
           };
           stateCache = syncedState;
           localStorage.setItem(STORAGE_KEY_DB, JSON.stringify(syncedState));
           notifyListeners();
-        } else if (stateCache && Object.keys(stateCache.sessions || {}).length > 0) {
-          // Jika Cloud masih kosong namun Admin sudah membuat sesi secara lokal, unggah ke Cloud
-          pushCloudWrite((database) => set(ref(database, '/'), stateCache));
         }
       },
       () => {
@@ -346,10 +358,9 @@ function logActivity(type, message) {
   current.activities = [entry, ...list].slice(0, 35);
   saveLocalDb(current);
 
-  pushCloudWrite((database) => {
-    const actRef = push(ref(database, 'activities'));
-    return set(actRef, entry);
-  });
+  pushCloudWrite((database) =>
+    set(ref(database, `activities/${entry.id}`), entry)
+  );
 }
 
 /* ============================================================================
@@ -382,7 +393,6 @@ export async function loginAdmin(email, password) {
     throw new Error('Kata sandi minimal terdiri dari 6 karakter.');
   }
 
-  // Simpan sesi admin seketika agar tombol langsung merespons tanpa menunggu jaringan
   const adminData = {
     uid: 'admin_01',
     email: cleanEmail,
@@ -394,8 +404,7 @@ export async function loginAdmin(email, password) {
   logActivity('auth', `Pemateri/Admin (${cleanEmail}) membuka sesi Q&A.`);
   notifyListeners();
 
-  // Sinkronkan dengan Firebase Auth di latar belakang bila diaktifkan
-  if (auth) {
+  if (auth && isFirebaseConnected) {
     signInWithEmailAndPassword(auth, cleanEmail, cleanPass).catch(() => {
       createUserWithEmailAndPassword(auth, cleanEmail, cleanPass).catch(() => {});
     });
@@ -407,7 +416,7 @@ export async function loginAdmin(email, password) {
 export async function logoutAdmin() {
   localStorage.removeItem(STORAGE_KEY_ADMIN);
   notifyListeners();
-  if (auth) {
+  if (auth && isFirebaseConnected) {
     signOut(auth).catch(() => {});
   }
 }
@@ -480,7 +489,6 @@ export async function submitQuestion(sessionId, { name, text, anonymous }) {
     selectedAt: null
   };
 
-  // Simpan instan + sinkronisasi Cloud
   const current = loadLocalDb();
   if (current.sessions[session.id]) {
     if (!current.sessions[session.id].questions) {
@@ -543,16 +551,12 @@ export async function toggleVoteQuestion(sessionId, questionId) {
 
   saveLocalDb(current);
 
-  pushCloudWrite(async (database) => {
-    const voteRef = ref(database, `votes/${session.id}/${questionId}/${pid}`);
-    const questionVotesRef = ref(database, `sessions/${session.id}/questions/${questionId}/votes`);
-    if (votedResult) {
-      await set(voteRef, true);
-    } else {
-      await remove(voteRef);
-    }
-    await set(questionVotesRef, nextVotes);
-  });
+  pushCloudWrite((database) =>
+    update(ref(database, '/'), {
+      [`votes/${session.id}/${questionId}/${pid}`]: votedResult ? true : null,
+      [`sessions/${session.id}/questions/${questionId}/votes`]: nextVotes
+    })
+  );
 
   return { voted: votedResult };
 }
@@ -651,16 +655,7 @@ export async function deleteQuestion(sessionId, questionId) {
   }
   saveLocalDb(current);
 
-  pushCloudWrite(async (database) => {
-    await remove(ref(database, `sessions/${session.id}/questions/${questionId}`));
-    if (session.drawState?.currentQuestionId === questionId) {
-      await update(ref(database, `sessions/${session.id}/drawState`), {
-        currentQuestionId: null,
-        isDrawing: false,
-        updatedAt: Date.now()
-      });
-    }
-  });
+  pushCloudWrite((database) => set(ref(database, `sessions/${session.id}`), targetSession));
 
   logActivity('delete', `Pertanyaan #${String(question.number).padStart(2, '0')} dihapus.`);
 }
@@ -753,8 +748,9 @@ export async function createNewSession({ name, speaker, description, customCode,
   const sessionId = cleanCustom || `SES-${randomCode}`;
   const now = Date.now();
 
-  const state = getAppState();
-  if (state.sessions[sessionId]) {
+  const current = loadLocalDb();
+  if (!current.sessions) current.sessions = {};
+  if (current.sessions[sessionId]) {
     throw new Error(`Kode sesi "${sessionId}" sudah digunakan. Gunakan kode lain.`);
   }
 
@@ -777,42 +773,39 @@ export async function createNewSession({ name, speaker, description, customCode,
     drawHistory: {}
   };
 
-  const current = loadLocalDb();
-  if (!current.sessions) current.sessions = {};
   current.sessions[sessionId] = newSessionObj;
   if (setAsActive || !current.activeSessionId) {
     current.activeSessionId = sessionId;
   }
   saveLocalDb(current);
 
-  pushCloudWrite(async (database) => {
-    await set(ref(database, `sessions/${sessionId}`), newSessionObj);
-    if (setAsActive || !state.activeSessionId) {
-      await set(ref(database, 'activeSessionId'), sessionId);
-    }
-  });
+  pushCloudWrite((database) =>
+    update(ref(database, '/'), {
+      [`sessions/${sessionId}`]: newSessionObj,
+      activeSessionId: current.activeSessionId
+    })
+  );
 
   logActivity('session', `Sesi baru "${cleanName}" (${sessionId}) berhasil dibuat.`);
   return newSessionObj;
 }
 
 export async function setActiveSession(sessionId) {
-  const state = getAppState();
-  if (!state.sessions[sessionId]) throw new Error('Sesi tidak ditemukan.');
-
   const current = loadLocalDb();
+  if (!current.sessions?.[sessionId]) throw new Error('Sesi tidak ditemukan.');
+
   current.activeSessionId = sessionId;
-  if (current.sessions[sessionId]) {
-    current.sessions[sessionId].status = 'active';
-  }
+  current.sessions[sessionId].status = 'active';
   saveLocalDb(current);
 
-  pushCloudWrite(async (database) => {
-    await set(ref(database, 'activeSessionId'), sessionId);
-    await update(ref(database, `sessions/${sessionId}`), { status: 'active' });
-  });
+  pushCloudWrite((database) =>
+    update(ref(database, '/'), {
+      activeSessionId: sessionId,
+      [`sessions/${sessionId}/status`]: 'active'
+    })
+  );
 
-  logActivity('session', `Sesi aktif dialihkan ke "${state.sessions[sessionId].name}".`);
+  logActivity('session', `Sesi aktif dialihkan ke "${current.sessions[sessionId].name}".`);
 }
 
 export async function updateSessionConfig(sessionId, updates) {
@@ -854,24 +847,24 @@ export async function clearAllQuestionsInSession(sessionId) {
   }
   saveLocalDb(current);
 
-  pushCloudWrite(async (database) => {
-    await remove(ref(database, `sessions/${session.id}/questions`));
-    await remove(ref(database, `sessions/${session.id}/drawHistory`));
-    await remove(ref(database, `votes/${session.id}`));
-    await set(ref(database, `sessions/${session.id}/drawState`), {
-      currentQuestionId: null,
-      isDrawing: false,
-      drawVersion: 0,
-      updatedAt: now
-    });
-  });
+  pushCloudWrite((database) =>
+    update(ref(database, '/'), {
+      [`sessions/${session.id}/questions`]: null,
+      [`sessions/${session.id}/drawHistory`]: null,
+      [`votes/${session.id}`]: null,
+      [`sessions/${session.id}/drawState`]: {
+        currentQuestionId: null,
+        isDrawing: false,
+        drawVersion: 0,
+        updatedAt: now
+      }
+    })
+  );
 
   logActivity('reset', `Seluruh pertanyaan pada sesi "${session.name}" telah dikosongkan.`);
 }
 
 export async function deleteSessionById(sessionId) {
-  const state = getAppState();
-
   const current = loadLocalDb();
   if (current.sessions) {
     delete current.sessions[sessionId];
@@ -882,13 +875,12 @@ export async function deleteSessionById(sessionId) {
   }
   saveLocalDb(current);
 
-  pushCloudWrite(async (database) => {
-    await remove(ref(database, `sessions/${sessionId}`));
-    if (state.activeSessionId === sessionId) {
-      const nextSession = state.sessionsList.find((s) => s.id !== sessionId);
-      await set(ref(database, 'activeSessionId'), nextSession ? nextSession.id : null);
-    }
-  });
+  pushCloudWrite((database) =>
+    update(ref(database, '/'), {
+      [`sessions/${sessionId}`]: null,
+      activeSessionId: current.activeSessionId
+    })
+  );
 
   logActivity('session', `Sesi ${sessionId} telah dihapus.`);
 }

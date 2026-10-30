@@ -278,6 +278,7 @@ export function bindSessionManagementPageEvents() {
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const fd = new FormData(form);
+      const shouldStartNow = fd.get('setAsActive') === 'on';
       try {
         const created = await createNewSession({
           name: fd.get('name'),
@@ -285,10 +286,12 @@ export function bindSessionManagementPageEvents() {
           description: fd.get('description'),
           customCode: fd.get('customCode'),
           allowAnonymous: fd.get('allowAnonymous') === 'on',
-          setAsActive: fd.get('setAsActive') === 'on'
+          setAsActive: shouldStartNow
         });
-        form.reset();
-        showToast(`Sesi "${created.name}" (${created.id}) berhasil dibuat.`, 'success');
+        showToast(`Sesi "${created.name}" (${created.id}) berhasil dibuat & dimulai.`, 'success');
+        if (shouldStartNow) {
+          navigateTo('/admin/dashboard');
+        }
       } catch (err) {
         showToast(err.message || 'Gagal membuat sesi baru.', 'error');
       }
