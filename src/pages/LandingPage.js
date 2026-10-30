@@ -48,50 +48,52 @@ export function renderLandingPage() {
               SmartQ&amp;A helps you create interactive question sessions with random question selection, bringing a fresh experience to every discussion, presentation, and learning session.
             </p>
 
-            <!-- Tactile Capsule Buttons -->
-            <div class="flex flex-wrap items-center gap-3 pt-1">
+            <!-- Tactile Capsule Buttons (Full-width & Balanced Grid on Mobile, Inline on Tablet/Desktop) -->
+            <div class="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2.5 sm:gap-3 pt-1">
               <a
                 href="${activeSession ? '#/admin/dashboard' : '#/admin/sessions'}"
-                class="ios-btn-primary px-6 py-3.5 text-xs sm:text-sm font-semibold inline-flex items-center gap-2.5"
+                class="ios-btn-primary px-6 py-3.5 text-xs sm:text-sm font-semibold inline-flex items-center justify-center gap-2.5 w-full sm:w-auto"
               >
                 <span>Mulai Q&amp;A</span>
                 ${Icons.arrowRight('w-4 h-4')}
               </a>
 
-              <a
-                href="#/participant${activeSession ? `?session=${encodeURIComponent(activeSession.id)}` : ''}"
-                class="ios-btn-glass px-5 py-3.5 text-xs sm:text-sm font-semibold inline-flex items-center gap-2"
-              >
-                <span>Halaman Peserta</span>
-              </a>
+              <div class="grid grid-cols-2 sm:flex items-center gap-2.5 sm:gap-3 w-full sm:w-auto">
+                <a
+                  href="#/participant${activeSession ? `?session=${encodeURIComponent(activeSession.id)}` : ''}"
+                  class="ios-btn-glass px-4 sm:px-5 py-3.5 text-xs sm:text-sm font-semibold inline-flex items-center justify-center gap-2"
+                >
+                  <span>Halaman Peserta</span>
+                </a>
 
-              <a
-                href="#/admin/draw"
-                class="ios-btn-glass px-5 py-3.5 text-xs sm:text-sm font-semibold text-[#2563EB] inline-flex items-center gap-2"
-              >
-                ${Icons.shuffle('w-4 h-4')}
-                <span>Layar Undian</span>
-              </a>
+                <a
+                  href="#/admin/draw"
+                  class="ios-btn-glass px-4 sm:px-5 py-3.5 text-xs sm:text-sm font-semibold text-[#2563EB] inline-flex items-center justify-center gap-2"
+                >
+                  ${Icons.shuffle('w-4 h-4 shrink-0')}
+                  <span>Layar Undian</span>
+                </a>
+              </div>
             </div>
 
             <!-- iOS Spotlight-Style Session Code Capsule -->
-            <div class="pt-3 max-w-md">
+            <div class="pt-2 sm:pt-3 max-w-md w-full">
               <form
                 id="landing-join-form"
-                class="p-1.5 rounded-full bg-white/80 backdrop-blur-xl border border-white shadow-sm flex items-center gap-2"
+                class="p-1.5 rounded-full bg-white/80 backdrop-blur-xl border border-white shadow-sm flex items-center gap-1.5 sm:gap-2 w-full"
               >
-                <div class="pl-3.5 text-slate-400">
+                <div class="pl-3 text-slate-400 shrink-0">
                   ${Icons.search('w-4 h-4')}
                 </div>
                 <input
                   type="text"
                   id="landing-session-code"
                   placeholder="Masukkan kode sesi Q&A..."
-                  class="flex-1 bg-transparent py-2 text-xs text-[#0F172A] font-mono uppercase placeholder:normal-case placeholder:font-sans placeholder:text-slate-400 focus:outline-none"
+                  class="flex-1 min-w-0 bg-transparent py-2 text-xs sm:text-sm text-[#0F172A] font-mono uppercase placeholder:normal-case placeholder:font-sans placeholder:text-slate-400 focus:outline-none"
                 />
                 <button
                   type="submit"
-                  class="px-5 py-2 rounded-full bg-[#0F172A] hover:bg-slate-800 text-white text-xs font-semibold transition shrink-0"
+                  class="px-4 sm:px-5 py-2.5 sm:py-2 rounded-full bg-[#0F172A] hover:bg-slate-800 text-white text-xs font-semibold transition shrink-0"
                 >
                   Gabung
                 </button>

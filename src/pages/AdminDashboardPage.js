@@ -91,7 +91,7 @@ export function renderAdminDashboardPage() {
               <label for="admin-switch-session" class="sr-only">Pilih Sesi</label>
               <select
                 id="admin-switch-session"
-                class="ios-btn-glass px-3.5 py-1 text-xs font-semibold text-[#0F172A] focus:outline-none cursor-pointer"
+                class="ios-btn-glass px-3.5 py-1.5 sm:py-1 text-xs font-semibold text-[#0F172A] focus:outline-none cursor-pointer w-full sm:w-auto max-w-full truncate"
               >
                 ${state.sessionsList
                   .map(
@@ -112,37 +112,39 @@ export function renderAdminDashboardPage() {
             </p>
           </div>
 
-          <!-- Capsule Actions -->
-          <div class="flex flex-wrap items-center gap-2.5">
+          <!-- Capsule Actions (Responsive Mobile Grid & Desktop Flex) -->
+          <div class="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2.5 w-full lg:w-auto">
             <a
               href="#/admin/draw"
-              class="ios-btn-primary px-5 py-3 text-xs font-semibold inline-flex items-center gap-2"
+              class="ios-btn-primary px-5 py-3 text-xs font-semibold inline-flex items-center justify-center gap-2 w-full sm:w-auto"
             >
               ${Icons.shuffle('w-4 h-4')}
               <span>Buka Layar Pengundian</span>
             </a>
 
-            <button
-              type="button"
-              id="admin-btn-qr"
-              class="ios-btn-glass px-4 py-3 text-xs font-semibold inline-flex items-center gap-2"
-            >
-              ${Icons.qr('w-4 h-4 text-[#2563EB]')}
-              <span>QR Sesi</span>
-            </button>
+            <div class="grid grid-cols-2 sm:flex items-center gap-2.5 w-full sm:w-auto">
+              <button
+                type="button"
+                id="admin-btn-qr"
+                class="ios-btn-glass px-4 py-3 text-xs font-semibold inline-flex items-center justify-center gap-2"
+              >
+                ${Icons.qr('w-4 h-4 text-[#2563EB]')}
+                <span>QR Sesi</span>
+              </button>
 
-            <button
-              type="button"
-              id="admin-toggle-accepting"
-              class="px-4 py-3 rounded-full text-xs font-semibold transition border inline-flex items-center gap-1.5 ${
-                session.allowQuestions !== false
-                  ? 'bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-900 border-emerald-500/25'
-                  : 'bg-amber-500/15 hover:bg-amber-500/25 text-amber-900 border-amber-500/25'
-              }"
-            >
-              ${session.allowQuestions !== false ? Icons.unlock('w-3.5 h-3.5') : Icons.lock('w-3.5 h-3.5')}
-              <span>${session.allowQuestions !== false ? 'Input: Dibuka' : 'Input: Ditutup'}</span>
-            </button>
+              <button
+                type="button"
+                id="admin-toggle-accepting"
+                class="px-4 py-3 rounded-full text-xs font-semibold transition border inline-flex items-center justify-center gap-1.5 ${
+                  session.allowQuestions !== false
+                    ? 'bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-900 border-emerald-500/25'
+                    : 'bg-amber-500/15 hover:bg-amber-500/25 text-amber-900 border-amber-500/25'
+                }"
+              >
+                ${session.allowQuestions !== false ? Icons.unlock('w-3.5 h-3.5') : Icons.lock('w-3.5 h-3.5')}
+                <span>${session.allowQuestions !== false ? 'Input: Dibuka' : 'Input: Ditutup'}</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -239,7 +241,7 @@ export function renderAdminDashboardPage() {
 
           <!-- iOS Segmented Filter & Search Capsule -->
           <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-            <div class="ios-segmented inline-flex flex-wrap items-center gap-1">
+            <div class="ios-segmented flex items-center gap-1 overflow-x-auto no-scrollbar max-w-full">
               ${[
                 { id: 'all', label: `Semua (${totalCount})` },
                 { id: 'pending', label: `Pending (${pendingCount})` },
@@ -252,7 +254,7 @@ export function renderAdminDashboardPage() {
                 <button
                   type="button"
                   data-status-filter="${f.id}"
-                  class="admin-status-filter-btn px-3 py-1.5 text-xs font-semibold transition-all ${
+                  class="admin-status-filter-btn px-3 py-1.5 text-xs font-semibold whitespace-nowrap shrink-0 transition-all ${
                     adminStatusFilter === f.id
                       ? 'ios-segment-active'
                       : 'text-slate-600 hover:text-[#0F172A]'
@@ -270,7 +272,7 @@ export function renderAdminDashboardPage() {
               id="admin-search-input"
               placeholder="Cari pengirim atau isi..."
               value="${escapeHtml(adminSearchQuery)}"
-              class="ios-input px-4 py-2 text-xs text-[#0F172A] sm:w-52 rounded-full"
+              class="ios-input px-4 py-2 text-xs text-[#0F172A] w-full sm:w-52 rounded-full"
             />
           </div>
 

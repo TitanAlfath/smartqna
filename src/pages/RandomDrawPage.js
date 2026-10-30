@@ -226,8 +226,8 @@ export function renderRandomDrawPage() {
           </div>
         </div>
 
-        <!-- CAPSULE TRANSPORT CONTROLS -->
-        <div class="mt-6 flex flex-wrap items-center justify-center gap-3">
+        <!-- CAPSULE TRANSPORT CONTROLS (Full-Width on Mobile, Inline on Tablet/Desktop) -->
+        <div class="mt-6 flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center justify-center gap-3">
           ${
             !selectedQ
               ? `
@@ -235,7 +235,7 @@ export function renderRandomDrawPage() {
               type="button"
               id="btn-start-random-draw"
               ${pendingList.length === 0 || isLocalAnimating ? 'disabled' : ''}
-              class="ios-btn-primary px-8 py-4 disabled:opacity-40 disabled:cursor-not-allowed font-bold text-sm sm:text-base inline-flex items-center gap-3"
+              class="ios-btn-primary px-8 py-4 disabled:opacity-40 disabled:cursor-not-allowed font-bold text-sm sm:text-base inline-flex items-center justify-center gap-3 w-full sm:w-auto"
             >
               ${Icons.shuffle('w-5 h-5')}
               <span>Mulai Pengundian (${pendingList.length} Tersedia)</span>
@@ -246,7 +246,7 @@ export function renderRandomDrawPage() {
               type="button"
               id="btn-mark-selected-answered"
               data-qid="${escapeHtml(selectedQ.id)}"
-              class="px-6 py-3.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm shadow-md transition inline-flex items-center gap-2"
+              class="px-6 py-3.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm shadow-md transition inline-flex items-center justify-center gap-2 w-full sm:w-auto"
             >
               ${Icons.check('w-4 h-4')}
               <span>Tandai Selesai Dijawab</span>
@@ -257,7 +257,7 @@ export function renderRandomDrawPage() {
               id="btn-draw-next-question"
               data-current-qid="${escapeHtml(selectedQ.id)}"
               ${pendingList.length === 0 || isLocalAnimating ? 'disabled' : ''}
-              class="ios-btn-primary px-7 py-3.5 disabled:opacity-40 disabled:cursor-not-allowed font-bold text-xs sm:text-sm inline-flex items-center gap-2"
+              class="ios-btn-primary px-7 py-3.5 disabled:opacity-40 disabled:cursor-not-allowed font-bold text-xs sm:text-sm inline-flex items-center justify-center gap-2 w-full sm:w-auto"
             >
               ${Icons.shuffle('w-4 h-4')}
               <span>Pertanyaan Berikutnya (${pendingList.length} Tersisa)</span>
@@ -267,7 +267,7 @@ export function renderRandomDrawPage() {
               type="button"
               id="btn-skip-selected-question"
               data-qid="${escapeHtml(selectedQ.id)}"
-              class="ios-btn-glass px-5 py-3.5 font-semibold text-xs sm:text-sm inline-flex items-center gap-2"
+              class="ios-btn-glass px-5 py-3.5 font-semibold text-xs sm:text-sm inline-flex items-center justify-center gap-2 w-full sm:w-auto"
             >
               ${Icons.skip('w-4 h-4')}
               <span>Lewati</span>

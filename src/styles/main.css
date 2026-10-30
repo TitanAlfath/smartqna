@@ -12,6 +12,13 @@
 }
 
 @layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+    overflow-x: hidden;
+  }
+
   body {
     background-color: #EEF2F7;
     background-image:
@@ -23,6 +30,33 @@
     font-family: -apple-system, BlinkMacSystemFont, 'Plus Jakarta Sans', 'SF Pro Display', 'SF Pro Text', system-ui, sans-serif;
     letter-spacing: -0.011em;
     -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+    width: 100%;
+  }
+
+  /* Smooth 60fps scrolling on mobile & tablet browsers (avoids fixed background repaint jitter on iOS/Android) */
+  @media (max-width: 1024px) {
+    body {
+      background-attachment: scroll;
+    }
+  }
+
+  /* Prevent iOS Safari & mobile browsers from auto-zooming when focusing inputs */
+  @media (max-width: 640px) {
+    input,
+    textarea,
+    select {
+      font-size: 16px !important;
+    }
+  }
+
+  button,
+  a,
+  input,
+  select,
+  textarea,
+  label {
+    touch-action: manipulation;
   }
 
   code, pre, .font-mono {
@@ -34,20 +68,40 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Safe Area Utilities for iPhone Notch / Dynamic Island & Android Gesture Bars */
+.safe-top {
+  padding-top: max(0.5rem, env(safe-area-inset-top));
+}
+
+.safe-bottom {
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+}
+
+/* Hide scrollbar for touch-scrollable pill bars while keeping scroll functionality */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
 /* ==========================================================================
-   APPLE iOS LIQUID GLASS DESIGN SYSTEM
+   APPLE iOS LIQUID GLASS DESIGN SYSTEM (RESPONSIVE ACROSS PHONE, TABLET, DESKTOP)
    ========================================================================== */
 
 /* Light Refractive Liquid Glass Surface */
 .liquid-glass {
   background: linear-gradient(
     135deg,
-    rgba(255, 255, 255, 0.82) 0%,
-    rgba(255, 255, 255, 0.58) 100%
+    rgba(255, 255, 255, 0.84) 0%,
+    rgba(255, 255, 255, 0.62) 100%
   );
   backdrop-filter: blur(28px) saturate(190%);
   -webkit-backdrop-filter: blur(28px) saturate(190%);
-  border: 1px solid rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.88);
   box-shadow:
     0 14px 40px -10px rgba(15, 23, 42, 0.07),
     0 2px 8px -2px rgba(15, 23, 42, 0.04),
@@ -58,10 +112,10 @@
 
 /* Subtle Inset Card / Row inside Liquid Glass */
 .liquid-cell {
-  background: rgba(255, 255, 255, 0.62);
+  background: rgba(255, 255, 255, 0.66);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.82);
   box-shadow:
     0 4px 14px -4px rgba(15, 23, 42, 0.04),
     inset 0 1px 0 0 rgba(255, 255, 255, 0.9);
@@ -70,32 +124,24 @@
 }
 
 .liquid-cell:hover {
-  background: rgba(255, 255, 255, 0.82);
+  background: rgba(255, 255, 255, 0.85);
   box-shadow:
     0 10px 24px -6px rgba(15, 23, 42, 0.07),
     inset 0 1px 0 0 rgba(255, 255, 255, 1);
 }
 
-/* Dark Obsidian Liquid Glass (Dynamic Island & Projector Stage) */
-.liquid-glass-dark {
-  background: linear-gradient(
-    145deg,
-    rgba(15, 23, 42, 0.88) 0%,
-    rgba(15, 23, 42, 0.72) 100%
-  );
-  backdrop-filter: blur(32px) saturate(200%);
-  -webkit-backdrop-filter: blur(32px) saturate(200%);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  box-shadow:
-    0 24px 60px -12px rgba(2, 6, 23, 0.55),
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.22),
-    inset 0 -1px 0 0 rgba(6, 182, 212, 0.12);
-  border-radius: 30px;
+@media (max-width: 640px) {
+  .liquid-glass {
+    border-radius: 22px;
+  }
+  .liquid-cell {
+    border-radius: 18px;
+  }
 }
 
-/* Dynamic Island Floating Capsule */
+/* Dynamic Island Toast Notification Capsule */
 .dynamic-island {
-  background: rgba(15, 23, 42, 0.86);
+  background: rgba(15, 23, 42, 0.9);
   backdrop-filter: blur(28px) saturate(200%);
   -webkit-backdrop-filter: blur(28px) saturate(200%);
   border: 1px solid rgba(255, 255, 255, 0.14);
@@ -131,11 +177,11 @@
 
 /* Liquid Translucent Pill Button */
 .ios-btn-glass {
-  background: rgba(255, 255, 255, 0.72);
+  background: rgba(255, 255, 255, 0.76);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   color: #0F172A;
-  border: 1px solid rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.92);
   box-shadow:
     0 4px 12px -2px rgba(15, 23, 42, 0.06),
     inset 0 1px 0 0 rgba(255, 255, 255, 0.95);
@@ -144,7 +190,7 @@
 }
 
 .ios-btn-glass:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.92);
+  background: rgba(255, 255, 255, 0.94);
   transform: translateY(-1px);
 }
 
@@ -172,7 +218,7 @@
 
 /* iOS Tactile Glass Input */
 .ios-input {
-  background: rgba(255, 255, 255, 0.75);
+  background: rgba(255, 255, 255, 0.78);
   border: 1px solid rgba(148, 163, 184, 0.35);
   box-shadow:
     inset 0 1px 2px rgba(15, 23, 42, 0.03),
@@ -186,28 +232,6 @@
   border-color: #2563EB;
   box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.14);
   outline: none;
-}
-
-/* Stage Active Specular Rim */
-@keyframes liquidStagePulse {
-  0%, 100% {
-    border-color: rgba(6, 182, 212, 0.75);
-    box-shadow:
-      0 24px 60px -12px rgba(6, 182, 212, 0.22),
-      inset 0 1px 0 0 rgba(255, 255, 255, 0.35),
-      inset 0 0 30px 0 rgba(6, 182, 212, 0.12);
-  }
-  50% {
-    border-color: rgba(37, 99, 235, 0.85);
-    box-shadow:
-      0 28px 70px -12px rgba(37, 99, 235, 0.32),
-      inset 0 1px 0 0 rgba(255, 255, 255, 0.45),
-      inset 0 0 40px 0 rgba(37, 99, 235, 0.18);
-  }
-}
-
-.stage-active-frame {
-  animation: liquidStagePulse 3.5s infinite ease-in-out;
 }
 
 @keyframes fadeIn {

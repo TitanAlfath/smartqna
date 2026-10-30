@@ -2,30 +2,32 @@
 <html lang="id" class="scroll-smooth">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="description" content="SmartQ&A — Sistem Tanya Jawab Interaktif Real-Time dan Pengundian Pertanyaan Acak untuk Seminar, Workshop, dan Kuliah Umum." />
-  <meta name="theme-color" content="#0F172A" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
+  <meta name="description" content="SmartQ&A — Interactive Audience Question & Answer Platform with Random Question Selection." />
+  <meta name="theme-color" content="#EEF2F7" />
+  <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="SmartQ&A" />
-  <meta property="og:title" content="SmartQ&A — Live Audience Question & Answer System" />
-  <meta property="og:description" content="Kirim pertanyaan secara real-time melalui QR Code tanpa perlu membuat akun." />
+  <meta name="format-detection" content="telephone=no" />
+  <meta property="og:title" content="SmartQ&A — Interactive Q&A Platform" />
+  <meta property="og:description" content="Make Every Question Count. Interactive question sessions with random question selection." />
   <meta property="og:type" content="website" />
   <link rel="icon" type="image/png" href="./assets/logo.png" />
   <link rel="apple-touch-icon" href="./assets/logo.png" />
   <link rel="manifest" href="./manifest.json" />
-  <title>SmartQ&A — Live Audience Question &amp; Answer System</title>
+  <title>SmartQ&A — Interactive Q&amp;A Platform</title>
   <!-- Typography Pairing: Plus Jakarta Sans, Instrument Serif, JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
 </head>
-<body class="bg-[#EEF2F7] text-[#0F172A] font-sans antialiased selection:bg-[#2563EB] selection:text-white min-h-screen flex flex-col">
+<body class="bg-[#EEF2F7] text-[#0F172A] font-sans antialiased selection:bg-[#2563EB] selection:text-white min-h-[100dvh] flex flex-col overflow-x-hidden">
   <!-- Root Application Container -->
-  <div id="app" class="flex-1 flex flex-col min-h-screen"></div>
+  <div id="app" class="flex-1 flex flex-col min-h-[100dvh] w-full max-w-[100vw] overflow-x-hidden"></div>
 
-  <!-- Toast Notification Container -->
-  <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0" role="status" aria-live="polite"></div>
+  <!-- Toast Notification Container (Responsive Mobile Bottom-Center / Desktop Bottom-Right) -->
+  <div id="toast-container" class="fixed bottom-4 inset-x-4 sm:inset-x-auto sm:bottom-5 sm:right-5 z-50 flex flex-col gap-2 sm:max-w-sm sm:w-full pointer-events-none safe-bottom" role="status" aria-live="polite"></div>
 
   <!-- Main Script Entry -->
   <script type="module" src="/src/main.js"></script>

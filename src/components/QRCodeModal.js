@@ -27,20 +27,20 @@ export async function openQRCodeModal(sessionId, sessionName) {
   modal.setAttribute('aria-modal', 'true');
 
   modal.innerHTML = `
-    <div class="liquid-glass max-w-md w-full p-6 sm:p-8 relative text-center">
+    <div class="liquid-glass max-w-md w-full max-h-[90dvh] overflow-y-auto p-5 sm:p-8 relative text-center">
       <!-- iOS Sheet Grabber Handle -->
-      <div class="w-10 h-1.5 rounded-full bg-slate-400/40 mx-auto mb-5"></div>
+      <div class="w-10 h-1.5 rounded-full bg-slate-400/40 mx-auto mb-4 sm:mb-5"></div>
 
       <button
         type="button"
         id="modal-close-btn"
         aria-label="Tutup modal"
-        class="absolute top-5 right-5 w-8 h-8 rounded-full bg-slate-900/[0.06] hover:bg-slate-900/[0.12] text-slate-600 flex items-center justify-center transition"
+        class="absolute top-4 right-4 sm:top-5 sm:right-5 w-8 h-8 rounded-full bg-slate-900/[0.06] hover:bg-slate-900/[0.12] text-slate-600 flex items-center justify-center transition"
       >
         ${Icons.close('w-4 h-4')}
       </button>
 
-      <h3 class="text-xl font-bold text-[#0F172A] mt-1 tracking-tight">
+      <h3 class="text-lg sm:text-xl font-bold text-[#0F172A] mt-1 tracking-tight pr-6 pl-6">
         ${escapeHtml(sessionName)}
       </h3>
       <p class="text-xs text-slate-500 mt-1">
@@ -48,11 +48,11 @@ export async function openQRCodeModal(sessionId, sessionName) {
       </p>
 
       <!-- QR Code Squircle Frame -->
-      <div class="my-6 p-5 rounded-[26px] bg-white/90 border border-white shadow-sm inline-flex items-center justify-center">
+      <div class="my-4 sm:my-6 p-4 sm:p-5 rounded-[24px] bg-white/90 border border-white shadow-sm inline-flex items-center justify-center">
         <img
           id="qr-modal-img"
           alt="QR Code Sesi ${escapeHtml(sessionId)}"
-          class="w-56 h-56 rounded-2xl object-contain"
+          class="w-44 h-44 sm:w-56 sm:h-56 rounded-2xl object-contain"
         />
       </div>
 
