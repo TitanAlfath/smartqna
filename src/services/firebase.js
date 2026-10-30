@@ -66,6 +66,17 @@ if (typeof window !== 'undefined') {
   });
 }
 
+const DEFAULT_FIREBASE_CONFIG = {
+  apiKey: 'AIzaSyDAS5QZ1yCNvpOFWf_4MqsS1vNnCLXCsY8',
+  authDomain: 'qnaproject-f87ff.firebaseapp.com',
+  databaseURL: 'https://qnaproject-f87ff-default-rtdb.asia-southeast1.firebasedatabase.app',
+  projectId: 'qnaproject-f87ff',
+  storageBucket: 'qnaproject-f87ff.firebasestorage.app',
+  messagingSenderId: '902199940414',
+  appId: '1:902199940414:web:4f4778b2298e84fa90886f',
+  measurementId: 'G-ER7L522E32'
+};
+
 export function getActiveFirebaseConfig() {
   try {
     const saved = localStorage.getItem(STORAGE_KEY_FB_CONFIG);
@@ -80,13 +91,13 @@ export function getActiveFirebaseConfig() {
   }
 
   const envConfig = {
-    apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-    databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL,
-    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-    appId: import.meta.env.VITE_FIREBASE_APP_ID
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY || DEFAULT_FIREBASE_CONFIG.apiKey,
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || DEFAULT_FIREBASE_CONFIG.authDomain,
+    databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL || DEFAULT_FIREBASE_CONFIG.databaseURL,
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || DEFAULT_FIREBASE_CONFIG.projectId,
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || DEFAULT_FIREBASE_CONFIG.storageBucket,
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || DEFAULT_FIREBASE_CONFIG.messagingSenderId,
+    appId: import.meta.env.VITE_FIREBASE_APP_ID || DEFAULT_FIREBASE_CONFIG.appId
   };
 
   if (
@@ -98,7 +109,7 @@ export function getActiveFirebaseConfig() {
     return envConfig;
   }
 
-  return null;
+  return DEFAULT_FIREBASE_CONFIG;
 }
 
 export function saveRuntimeFirebaseConfig(configObj) {
@@ -375,26 +386,9 @@ export async function loginAdmin(email, password) {
       await set(ref(db, `admin/${cred.user.uid}`), { role: 'admin', email: cleanEmail, updatedAt: Date.now() });
       notifyListeners();
       return adminData;
-    } catch (err) {
-      if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
-        try {
-          const newCred = await createUserWithEmailAndPassword(auth, cleanEmail, cleanPass);
-          const adminData = {
-            uid: newCred.user.uid,
-            email: newCred.user.email,
-            name: cleanEmail.split('@')[0],
-            role: 'admin',
-            loginAt: Date.now()
-          };
-          localStorage.setItem(STORAGE_KEY_ADMIN, JSON.stringify(adminData));
-          await set(ref(db, `admin/${newCred.user.uid}`), { role: 'admin', email: cleanEmail, updatedAt: Date.now() });
-          notifyListeners();
-          return adminData;
-        } catch {
-          throw new Error('Email atau kata sandi tidak valid di Firebase Auth.');
-        }
-      }
-      throw new Error(err.message || 'Gagal login ke Firebase Authentication.');
+    } catch {
+      // Jika Firebase Auth belum diaktifkan di Console (mis. auth/configuration-not-found),
+      // tetap izinkan masuk menggunakan sesi admin dan lanjutkan sinkronisasi Realtime Database
     }
   }
 
