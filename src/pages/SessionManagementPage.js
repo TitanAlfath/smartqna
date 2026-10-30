@@ -68,7 +68,6 @@ export function renderSessionManagementPage() {
                 type="text"
                 name="name"
                 required
-                placeholder="Contoh: Seminar Nasional Teknologi 2026"
                 class="ios-input w-full px-4 py-2.5 text-sm text-[#0F172A]"
               />
             </div>
@@ -79,7 +78,6 @@ export function renderSessionManagementPage() {
                 <input
                   type="text"
                   name="speaker"
-                  placeholder="Contoh: Dr. Budi Santoso"
                   class="ios-input w-full px-3.5 py-2.5 text-xs sm:text-sm text-[#0F172A]"
                 />
               </div>
@@ -89,8 +87,7 @@ export function renderSessionManagementPage() {
                   type="text"
                   name="customCode"
                   maxlength="16"
-                  placeholder="Otomatis / SEM-01"
-                  class="ios-input w-full px-3.5 py-2.5 text-xs sm:text-sm font-mono uppercase text-[#0F172A] placeholder:font-sans placeholder:normal-case"
+                  class="ios-input w-full px-3.5 py-2.5 text-xs sm:text-sm font-mono uppercase text-[#0F172A]"
                 />
               </div>
             </div>
@@ -100,7 +97,6 @@ export function renderSessionManagementPage() {
               <textarea
                 name="description"
                 rows="3"
-                placeholder="Deskripsi singkat agenda tanya jawab..."
                 class="ios-input w-full px-4 py-2.5 text-sm text-[#0F172A] resize-none"
               ></textarea>
             </div>

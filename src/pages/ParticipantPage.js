@@ -191,7 +191,6 @@ export function renderParticipantPage() {
                     type="text"
                     id="input-participant-name"
                     maxlength="60"
-                    placeholder="Contoh: Andi Wijaya — Mahasiswa"
                     value="${escapeHtml(savedParticipantName)}"
                     ${isAnonChecked ? 'disabled' : ''}
                     class="ios-input w-full px-4 py-2.5 text-sm text-[#0F172A] disabled:opacity-50"
@@ -231,7 +230,6 @@ export function renderParticipantPage() {
                     rows="4"
                     maxlength="350"
                     required
-                    placeholder="Tuliskan pertanyaan Anda dengan jelas (minimal 10 karakter)..."
                     class="ios-input w-full px-4 py-3 text-sm text-[#0F172A] resize-none leading-relaxed"
                   >${escapeHtml(draftQuestionText)}</textarea>
                 </div>

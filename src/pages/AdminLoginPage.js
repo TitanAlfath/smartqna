@@ -38,7 +38,6 @@ export function renderAdminLoginPage() {
               id="admin-email"
               required
               value="admin@smartqa.id"
-              placeholder="admin@smartqa.id"
               class="ios-input w-full px-4 py-3 text-sm text-[#0F172A]"
             />
           </div>
@@ -52,7 +51,6 @@ export function renderAdminLoginPage() {
               id="admin-password"
               required
               value="smartqa2026"
-              placeholder="Minimal 6 karakter"
               class="ios-input w-full px-4 py-3 text-sm text-[#0F172A]"
             />
           </div>
