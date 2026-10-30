@@ -66,11 +66,6 @@ export function renderAdminLoginPage() {
             </button>
           </div>
         </form>
-
-        <div class="mt-6 pt-4 border-t border-slate-200/70 flex items-center justify-between text-[11px] font-medium text-slate-500">
-          <span>Mode: <strong class="text-[#0F172A]">${fbInfo.connected ? 'Firebase Auth' : 'Local Session'}</strong></span>
-          <span>Akses Admin Siap Pakai</span>
-        </div>
       </div>
     </main>
   `;

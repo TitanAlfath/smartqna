@@ -69,21 +69,6 @@ export function renderNavbar(currentPath) {
 
           <!-- Right: Liquid Capsule Controls -->
           <div class="flex items-center gap-1 sm:gap-2 shrink-0">
-            <!-- Cloud / Sync Status Capsule -->
-            <button
-              type="button"
-              id="nav-btn-firebase-config"
-              title="Pengaturan Koneksi Firebase Realtime Database"
-              class="inline-flex items-center justify-center gap-1.5 p-2 sm:px-3 sm:py-1.5 rounded-full text-[11px] font-semibold transition border ${
-                fbInfo.connected
-                  ? 'bg-emerald-500/15 text-emerald-700 border-emerald-500/25 hover:bg-emerald-500/25'
-                  : 'bg-white/75 text-slate-700 border-white hover:bg-white'
-              }"
-            >
-              ${Icons.database('w-3.5 h-3.5 text-[#2563EB] shrink-0')}
-              <span class="hidden md:inline">${fbInfo.connected ? 'Cloud Aktif' : 'Live Sync'}</span>
-            </button>
-
             ${
               activeSession
                 ? `
