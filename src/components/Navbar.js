@@ -1,5 +1,5 @@
 /**
- * SmartQ&A — iPhone Dynamic Island & Liquid Glass Floating Dock Navigation
+ * SmartQ&A — Apple iOS Liquid Glass Floating Navigation Bar
  */
 
 import { getCurrentAdmin, getFirebaseConnectionInfo, getSessionById, logoutAdmin } from '../services/firebase.js';
@@ -23,8 +23,8 @@ export function renderNavbar(currentPath) {
   return `
     <header class="sticky top-3 z-40 px-3 sm:px-6 pt-1 pb-2 pointer-events-none">
       <div class="max-w-5xl mx-auto flex flex-col items-center gap-2.5">
-        <!-- Main iPhone Dynamic Island Capsule -->
-        <div class="dynamic-island pointer-events-auto w-full px-3 sm:px-4 py-2 flex items-center justify-between gap-2 text-white">
+        <!-- Main iOS Liquid Glass Capsule -->
+        <div class="liquid-glass rounded-full pointer-events-auto w-full px-3.5 sm:px-5 py-2.5 flex items-center justify-between gap-2 text-[#0F172A]">
           <!-- Left: Custom Logo & Live Session Activity Pill -->
           <div class="flex items-center gap-2.5 min-w-0">
             <a
@@ -36,32 +36,32 @@ export function renderNavbar(currentPath) {
                 alt="Logo SmartQ&A"
                 class="w-8 h-8 object-contain drop-shadow-sm shrink-0"
               />
-              <span class="font-bold text-sm tracking-tight text-white">
-                Smart<span class="text-[#06B6D4]">Q&amp;A</span>
+              <span class="font-bold text-sm tracking-tight text-[#0F172A]">
+                Smart<span class="text-[#2563EB]">Q&amp;A</span>
               </span>
             </a>
 
             ${
               activeSession
                 ? `
-              <div class="hidden md:flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.08] border border-white/[0.12] min-w-0">
+              <div class="hidden md:flex items-center gap-2 px-3 py-1 rounded-full bg-white/75 border border-white shadow-sm min-w-0">
                 <span class="w-2 h-2 rounded-full shrink-0 ${
                   activeSession.status === 'active'
                     ? 'bg-[#06B6D4] shadow-[0_0_8px_#06B6D4]'
-                    : 'bg-slate-500'
+                    : 'bg-slate-400'
                 }"></span>
-                <span class="text-xs text-slate-200 truncate max-w-[190px] font-medium" title="${escapeHtml(activeSession.name)}">
+                <span class="text-xs text-slate-700 truncate max-w-[190px] font-medium" title="${escapeHtml(activeSession.name)}">
                   ${escapeHtml(activeSession.name)}
                 </span>
-                <span class="font-mono text-[11px] px-2 py-0.5 rounded-full bg-white/[0.1] text-[#06B6D4]">
+                <span class="font-mono text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#2563EB]/10 text-[#2563EB]">
                   ${escapeHtml(activeSession.id)}
                 </span>
               </div>
             `
                 : `
-              <div class="hidden md:flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.06] border border-white/[0.1]">
+              <div class="hidden md:flex items-center gap-2 px-3 py-1 rounded-full bg-white/60 border border-white/80">
                 <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
-                <span class="text-[11px] text-slate-300 font-medium">Belum ada sesi aktif</span>
+                <span class="text-[11px] text-slate-500 font-medium">Belum ada sesi aktif</span>
               </div>
             `
             }
@@ -74,13 +74,13 @@ export function renderNavbar(currentPath) {
               type="button"
               id="nav-btn-firebase-config"
               title="Pengaturan Koneksi Firebase Realtime Database"
-              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium transition border ${
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold transition border ${
                 fbInfo.connected
-                  ? 'bg-emerald-500/15 text-emerald-300 border-emerald-400/30 hover:bg-emerald-500/25'
-                  : 'bg-white/[0.08] text-slate-200 border-white/[0.12] hover:bg-white/[0.14]'
+                  ? 'bg-emerald-500/15 text-emerald-700 border-emerald-500/25 hover:bg-emerald-500/25'
+                  : 'bg-white/75 text-slate-700 border-white hover:bg-white'
               }"
             >
-              ${Icons.database('w-3.5 h-3.5 text-[#06B6D4]')}
+              ${Icons.database('w-3.5 h-3.5 text-[#2563EB]')}
               <span class="hidden sm:inline">${fbInfo.connected ? 'Cloud Aktif' : 'Live Sync'}</span>
             </button>
 
@@ -90,9 +90,9 @@ export function renderNavbar(currentPath) {
               <button
                 type="button"
                 id="nav-btn-qr"
-                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/[0.08] hover:bg-white/[0.15] text-white border border-white/[0.12] text-xs font-medium transition"
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/75 hover:bg-white text-[#0F172A] border border-white text-xs font-semibold transition shadow-sm"
               >
-                ${Icons.qr('w-3.5 h-3.5 text-[#06B6D4]')}
+                ${Icons.qr('w-3.5 h-3.5 text-[#2563EB]')}
                 <span class="hidden sm:inline">QR</span>
               </button>
             `
@@ -101,13 +101,13 @@ export function renderNavbar(currentPath) {
 
             <a
               href="#/participant"
-              class="px-3.5 py-1.5 rounded-full text-xs font-medium transition ${
+              class="px-3.5 py-1.5 rounded-full text-xs font-semibold transition ${
                 currentPath === '/participant'
-                  ? 'bg-white text-[#0F172A] shadow-sm font-semibold'
-                  : 'text-slate-300 hover:text-white hover:bg-white/[0.08]'
+                  ? 'bg-[#2563EB]/12 text-[#2563EB] border border-[#2563EB]/20'
+                  : 'text-slate-600 hover:text-[#0F172A] hover:bg-white/70'
               }"
             >
-               Tanya Jawab
+              Tanya Jawab
             </a>
 
             ${
@@ -116,11 +116,7 @@ export function renderNavbar(currentPath) {
               <div class="flex items-center gap-1">
                 <a
                   href="#${activeSession ? '/admin/dashboard' : '/admin/sessions'}"
-                  class="px-3.5 py-1.5 rounded-full text-xs font-semibold transition ${
-                    isAdminRoute
-                      ? 'bg-[#2563EB] text-white shadow-[0_0_16px_rgba(37,99,235,0.5)] border border-white/25'
-                      : 'bg-white/[0.12] text-white hover:bg-white/[0.2]'
-                  }"
+                  class="ios-btn-primary px-4 py-1.5 text-xs font-semibold transition"
                 >
                   ${activeSession ? 'Panel Q&A' : 'Mulai Q&A'}
                 </a>
@@ -128,7 +124,7 @@ export function renderNavbar(currentPath) {
                   type="button"
                   id="nav-btn-logout"
                   title="Keluar dari sesi Pemateri"
-                  class="px-2.5 py-1.5 rounded-full text-xs text-slate-400 hover:text-red-300 hover:bg-red-500/15 transition"
+                  class="px-2.5 py-1.5 rounded-full text-xs font-medium text-slate-500 hover:text-red-600 hover:bg-red-500/10 transition"
                 >
                   Keluar
                 </button>
@@ -137,7 +133,7 @@ export function renderNavbar(currentPath) {
                 : `
               <a
                 href="#/admin/login"
-                class="px-4 py-1.5 rounded-full bg-[#2563EB] hover:bg-blue-500 text-white text-xs font-semibold transition border border-white/25 shadow-sm inline-flex items-center gap-1.5"
+                class="ios-btn-primary px-4 py-1.5 text-xs font-semibold inline-flex items-center gap-1.5"
               >
                 <span>Mulai Q&amp;A</span>
                 ${Icons.arrowRight('w-3 h-3')}
@@ -153,7 +149,7 @@ export function renderNavbar(currentPath) {
             ? `
           <nav
             aria-label="Navigasi Panel Q&A"
-            class="pointer-events-auto liquid-glass px-1.5 py-1.5 rounded-full inline-flex items-center gap-1 shadow-lg"
+            class="pointer-events-auto liquid-glass px-1.5 py-1.5 rounded-full inline-flex items-center gap-1"
           >
             ${adminNavLinks
               .map((item) => {
@@ -163,7 +159,7 @@ export function renderNavbar(currentPath) {
                     href="#${item.path}"
                     class="px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
                       active
-                        ? 'bg-[#0F172A] text-white shadow-sm'
+                        ? 'ios-btn-primary shadow-sm'
                         : 'text-slate-600 hover:text-[#0F172A] hover:bg-white/60'
                     }"
                   >

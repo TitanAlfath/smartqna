@@ -145,17 +145,17 @@ export function renderParticipantPage() {
         ${
           selectedQ
             ? `
-          <div class="mt-5 liquid-glass-dark text-white p-5 stage-active-frame">
+          <div class="mt-5 liquid-cell p-5 ring-2 ring-[#2563EB] bg-white/90">
             <div class="flex flex-wrap items-center justify-between gap-2 mb-1.5">
-              <span class="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-[#06B6D4]">
-                <span class="w-2 h-2 rounded-full bg-[#06B6D4] shadow-[0_0_8px_#06B6D4] animate-ping"></span>
-                Live Stage • Pertanyaan #${String(selectedQ.number).padStart(2, '0')}
+              <span class="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-[#2563EB]">
+                <span class="w-2 h-2 rounded-full bg-[#2563EB] animate-ping"></span>
+                Sedang Dibahas • Pertanyaan #${String(selectedQ.number).padStart(2, '0')}
               </span>
-              <span class="text-xs text-slate-300 font-medium">
-                Oleh: <strong class="text-white">${escapeHtml(selectedQ.name)}</strong>
+              <span class="text-xs text-slate-500 font-medium">
+                Oleh: <strong class="text-[#0F172A]">${escapeHtml(selectedQ.name)}</strong>
               </span>
             </div>
-            <p class="text-base sm:text-lg font-semibold text-white leading-snug">
+            <p class="text-base sm:text-lg font-semibold text-[#0F172A] leading-snug">
               "${escapeHtml(selectedQ.text)}"
             </p>
           </div>

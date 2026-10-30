@@ -99,22 +99,22 @@ export function renderLandingPage() {
             </div>
           </div>
 
-          <!-- Right Column (5 Cols): iPhone StandBy / Live Activity Dark Glass Widget -->
+          <!-- Right Column (5 Cols): iOS Liquid Glass Live Activity Widget -->
           <div class="lg:col-span-5">
-            <div class="liquid-glass-dark text-white p-6 sm:p-7 relative overflow-hidden">
+            <div class="liquid-glass p-6 sm:p-7 relative overflow-hidden">
               <!-- Top Status Header -->
-              <div class="flex items-center justify-between gap-2 pb-4 border-b border-white/[0.1]">
+              <div class="flex items-center justify-between gap-2 pb-4 border-b border-slate-200/70">
                 <div class="flex items-center gap-2">
                   <span class="w-2.5 h-2.5 rounded-full ${
                     activeSession && activeSession.status === 'active'
                       ? 'bg-[#06B6D4] shadow-[0_0_10px_#06B6D4]'
-                      : 'bg-slate-500'
+                      : 'bg-slate-400'
                   }"></span>
-                  <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-300">
-                    Live Activity • Status Sesi
+                  <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                    Status Sesi Saat Ini
                   </span>
                 </div>
-                <span class="font-mono text-xs font-semibold px-3 py-1 rounded-full bg-white/[0.1] text-[#06B6D4] border border-white/[0.12]">
+                <span class="font-mono text-xs font-semibold px-3 py-1 rounded-full bg-[#2563EB]/10 text-[#2563EB]">
                   ${activeSession ? escapeHtml(activeSession.id) : 'BELUM ADA SESI'}
                 </span>
               </div>
@@ -124,42 +124,42 @@ export function renderLandingPage() {
                   ? `
                 <div class="mt-5 space-y-5">
                   <div>
-                    <h2 class="text-xl font-bold text-white leading-snug tracking-tight">
+                    <h2 class="text-xl font-bold text-[#0F172A] leading-snug tracking-tight">
                       ${escapeHtml(activeSession.name)}
                     </h2>
-                    <p class="text-xs text-[#06B6D4] font-medium mt-1">
+                    <p class="text-xs text-[#2563EB] font-semibold mt-1">
                       ${escapeHtml(activeSession.speaker || 'Pemateri Utama')}
                     </p>
-                    <p class="text-xs text-slate-300/80 mt-2 leading-relaxed line-clamp-2">
+                    <p class="text-xs text-slate-600 mt-2 leading-relaxed line-clamp-2">
                       ${escapeHtml(activeSession.description || '')}
                     </p>
                   </div>
 
                   <!-- iOS Widget Sub-Pills -->
                   <div class="grid grid-cols-3 gap-2.5">
-                    <div class="p-3.5 rounded-2xl bg-white/[0.07] border border-white/[0.1] text-center">
-                      <span class="block font-mono text-2xl font-bold text-white tabular-nums">${totalQuestions}</span>
-                      <span class="text-[11px] text-slate-300 font-medium">Masuk</span>
+                    <div class="liquid-cell p-3.5 text-center">
+                      <span class="block font-mono text-2xl font-bold text-[#0F172A] tabular-nums">${totalQuestions}</span>
+                      <span class="text-[11px] text-slate-500 font-medium">Masuk</span>
                     </div>
-                    <div class="p-3.5 rounded-2xl bg-white/[0.07] border border-white/[0.1] text-center">
-                      <span class="block font-mono text-2xl font-bold text-[#06B6D4] tabular-nums">${pendingCount}</span>
-                      <span class="text-[11px] text-slate-300 font-medium">Pending</span>
+                    <div class="liquid-cell p-3.5 text-center">
+                      <span class="block font-mono text-2xl font-bold text-[#2563EB] tabular-nums">${pendingCount}</span>
+                      <span class="text-[11px] text-slate-500 font-medium">Pending</span>
                     </div>
-                    <div class="p-3.5 rounded-2xl bg-white/[0.07] border border-white/[0.1] text-center">
-                      <span class="block font-mono text-2xl font-bold text-emerald-400 tabular-nums">${answeredCount}</span>
-                      <span class="text-[11px] text-slate-300 font-medium">Terjawab</span>
+                    <div class="liquid-cell p-3.5 text-center">
+                      <span class="block font-mono text-2xl font-bold text-emerald-600 tabular-nums">${answeredCount}</span>
+                      <span class="text-[11px] text-slate-500 font-medium">Terjawab</span>
                     </div>
                   </div>
 
                   ${
                     latestQuestion
                       ? `
-                    <div class="p-3.5 rounded-2xl bg-white/[0.06] border border-white/[0.1]">
-                      <div class="flex items-center justify-between text-[11px] text-slate-300 mb-1">
-                        <span class="font-semibold text-[#06B6D4]">Pertanyaan Terbaru (#${String(latestQuestion.number).padStart(2, '0')})</span>
+                    <div class="liquid-cell p-3.5">
+                      <div class="flex items-center justify-between text-[11px] text-slate-500 mb-1">
+                        <span class="font-semibold text-[#2563EB]">Pertanyaan Terbaru (#${String(latestQuestion.number).padStart(2, '0')})</span>
                         <span>${escapeHtml(latestQuestion.name)}</span>
                       </div>
-                      <p class="text-xs text-white/90 line-clamp-2 leading-relaxed">
+                      <p class="text-xs text-[#0F172A] line-clamp-2 leading-relaxed">
                         "${escapeHtml(latestQuestion.text)}"
                       </p>
                     </div>
@@ -178,9 +178,9 @@ export function renderLandingPage() {
                     <button
                       type="button"
                       id="landing-btn-qr"
-                      class="py-3 px-4 rounded-full bg-white/[0.1] hover:bg-white/[0.18] text-white border border-white/[0.15] text-xs font-semibold transition inline-flex items-center justify-center gap-2"
+                      class="ios-btn-glass py-3 px-4 text-xs font-semibold inline-flex items-center justify-center gap-2"
                     >
-                      ${Icons.qr('w-3.5 h-3.5 text-[#06B6D4]')}
+                      ${Icons.qr('w-3.5 h-3.5 text-[#2563EB]')}
                       <span>QR Code</span>
                     </button>
                   </div>
@@ -191,13 +191,13 @@ export function renderLandingPage() {
                   <img
                     src="./assets/logo.png"
                     alt="SmartQ&A Logo"
-                    class="w-16 h-16 object-contain mx-auto drop-shadow-md"
+                    class="w-16 h-16 object-contain mx-auto drop-shadow-sm"
                   />
                   <div class="space-y-1.5 max-w-xs mx-auto">
-                    <h2 class="text-base font-bold text-white tracking-tight">
+                    <h2 class="text-base font-bold text-[#0F172A] tracking-tight">
                       Belum Ada Sesi Q&amp;A Aktif
                     </h2>
-                    <p class="text-xs text-slate-300/80 leading-relaxed">
+                    <p class="text-xs text-slate-500 leading-relaxed">
                       Sistem masih kosong. Tekan tombol <strong>Mulai Q&amp;A</strong> untuk menambahkan sesi kegiatan baru beserta QR Code peserta.
                     </p>
                   </div>

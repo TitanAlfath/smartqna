@@ -1,5 +1,5 @@
 /**
- * SmartQ&A — 5. Random Question Drawing Page (iOS Dark Liquid Glass Projector Stage)
+ * SmartQ&A — 5. Random Question Drawing Page (Unified Apple iOS Liquid Glass Projector Stage)
  */
 
 import {
@@ -23,12 +23,12 @@ export function renderRandomDrawPage() {
 
   if (!session) {
     return `
-      <main class="flex-1 bg-[#060A14] text-white flex items-center justify-center p-6 rounded-t-[32px] mt-2">
-        <div class="liquid-glass-dark p-8 sm:p-10 text-center space-y-4 max-w-md">
-          <img src="./assets/logo.png" alt="SmartQ&A" class="w-16 h-16 object-contain mx-auto drop-shadow-md" />
+      <main class="max-w-3xl mx-auto px-4 py-12 text-center">
+        <div class="liquid-glass p-8 sm:p-10 text-center space-y-4">
+          <img src="./assets/logo.png" alt="SmartQ&A" class="w-16 h-16 object-contain mx-auto drop-shadow-sm" />
           <div class="space-y-1">
-            <h2 class="text-xl font-bold tracking-tight">Belum Ada Sesi Q&amp;A Aktif</h2>
-            <p class="text-xs text-slate-300/80 leading-relaxed">
+            <h2 class="text-xl font-bold text-[#0F172A] tracking-tight">Belum Ada Sesi Q&amp;A Aktif</h2>
+            <p class="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
               Buat sesi kegiatan terlebih dahulu sebelum membuka layar pengundian proyektor.
             </p>
           </div>
@@ -48,25 +48,21 @@ export function renderRandomDrawPage() {
   const soundOn = soundFX.isEnabled();
 
   return `
-    <main class="flex-1 bg-[#060A14] text-white flex flex-col justify-between px-4 sm:px-8 lg:px-12 py-6 sm:py-8 relative overflow-hidden rounded-t-[36px] mt-2 shadow-2xl border-t border-white/[0.12]">
-      <!-- Subtle Ambient Liquid Refraction -->
-      <div class="pointer-events-none absolute -top-28 left-1/4 w-[520px] h-[260px] bg-[#2563EB]/20 blur-[110px] rounded-full"></div>
-      <div class="pointer-events-none absolute -bottom-28 right-1/4 w-[520px] h-[260px] bg-[#06B6D4]/15 blur-[110px] rounded-full"></div>
-
+    <main class="max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-8 space-y-6 flex-1 flex flex-col justify-between">
       <!-- Top Projector Capsule Bar -->
-      <div class="max-w-6xl w-full mx-auto relative z-10 flex flex-wrap items-center justify-between gap-4 pb-5 border-b border-white/[0.1]">
+      <section class="liquid-glass p-5 sm:p-6 flex flex-wrap items-center justify-between gap-4">
         <div class="flex items-center gap-3.5">
-          <img src="./assets/logo.png" alt="SmartQ&A" class="w-10 h-10 object-contain drop-shadow-md shrink-0" />
+          <img src="./assets/logo.png" alt="SmartQ&A" class="w-10 h-10 object-contain drop-shadow-sm shrink-0" />
           <div>
             <div class="flex items-center gap-2">
-              <h1 class="text-xl sm:text-2xl font-bold text-white tracking-tight">
+              <h1 class="text-xl sm:text-2xl font-bold text-[#0F172A] tracking-tight">
                 ${escapeHtml(session.name)}
               </h1>
-              <span class="font-mono text-xs px-2.5 py-0.5 rounded-full bg-white/[0.08] text-[#06B6D4] border border-white/[0.12]">
+              <span class="font-mono text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#2563EB]/10 text-[#2563EB]">
                 ${escapeHtml(session.id)}
               </span>
             </div>
-            <p class="text-xs text-slate-400 mt-0.5">
+            <p class="text-xs text-slate-500 mt-0.5">
               ${escapeHtml(session.speaker || 'Sesi Tanya Jawab')}
             </p>
           </div>
@@ -74,20 +70,20 @@ export function renderRandomDrawPage() {
 
         <!-- Telemetry Capsule & Utility Pills -->
         <div class="flex flex-wrap items-center gap-2">
-          <div class="flex items-center gap-3 px-4 py-2 rounded-full bg-white/[0.07] border border-white/[0.12] backdrop-blur-xl">
+          <div class="flex items-center gap-3 px-4 py-2 rounded-full bg-white/80 border border-white shadow-sm">
             <div class="text-center px-1">
-              <span class="block font-mono text-base font-bold text-[#06B6D4] tabular-nums" id="draw-stat-pending">${pendingList.length}</span>
-              <span class="block text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Pending</span>
+              <span class="block font-mono text-base font-bold text-[#2563EB] tabular-nums" id="draw-stat-pending">${pendingList.length}</span>
+              <span class="block text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Pending</span>
             </div>
-            <div class="h-5 w-px bg-white/[0.12]"></div>
+            <div class="h-5 w-px bg-slate-200"></div>
             <div class="text-center px-1">
-              <span class="block font-mono text-base font-bold text-emerald-400 tabular-nums">${answeredList.length}</span>
-              <span class="block text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Terjawab</span>
+              <span class="block font-mono text-base font-bold text-emerald-600 tabular-nums">${answeredList.length}</span>
+              <span class="block text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Terjawab</span>
             </div>
-            <div class="h-5 w-px bg-white/[0.12]"></div>
+            <div class="h-5 w-px bg-slate-200"></div>
             <div class="text-center px-1">
-              <span class="block font-mono text-base font-bold text-slate-400 tabular-nums">${skippedList.length}</span>
-              <span class="block text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Dilewati</span>
+              <span class="block font-mono text-base font-bold text-slate-500 tabular-nums">${skippedList.length}</span>
+              <span class="block text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Dilewati</span>
             </div>
           </div>
 
@@ -96,8 +92,8 @@ export function renderRandomDrawPage() {
             id="draw-btn-sound"
             class="px-3.5 py-2.5 rounded-full border text-xs font-semibold transition inline-flex items-center gap-1.5 ${
               soundOn
-                ? 'bg-[#2563EB]/25 border-[#2563EB]/60 text-[#06B6D4]'
-                : 'bg-white/[0.06] border-white/[0.12] text-slate-400'
+                ? 'bg-[#2563EB]/12 border-[#2563EB]/30 text-[#2563EB]'
+                : 'ios-btn-glass text-slate-500'
             }"
           >
             ${soundOn ? Icons.volumeOn('w-3.5 h-3.5') : Icons.volumeOff('w-3.5 h-3.5')}
@@ -107,58 +103,58 @@ export function renderRandomDrawPage() {
           <button
             type="button"
             id="draw-btn-qr"
-            class="px-3.5 py-2.5 rounded-full bg-white/[0.08] hover:bg-white/[0.14] border border-white/[0.12] text-xs font-semibold text-white transition inline-flex items-center gap-1.5"
+            class="ios-btn-glass px-3.5 py-2.5 text-xs font-semibold inline-flex items-center gap-1.5"
           >
-            ${Icons.qr('w-3.5 h-3.5 text-[#06B6D4]')}
+            ${Icons.qr('w-3.5 h-3.5 text-[#2563EB]')}
             <span>QR Sesi</span>
           </button>
 
           <button
             type="button"
             id="draw-btn-fullscreen"
-            class="px-3.5 py-2.5 rounded-full bg-white/[0.08] hover:bg-white/[0.14] border border-white/[0.12] text-xs font-semibold text-white transition inline-flex items-center gap-1.5"
+            class="ios-btn-glass px-3.5 py-2.5 text-xs font-semibold inline-flex items-center gap-1.5"
           >
-            ${Icons.maximize('w-3.5 h-3.5')}
+            ${Icons.maximize('w-3.5 h-3.5 text-[#2563EB]')}
             <span class="hidden sm:inline">Layar Penuh</span>
           </button>
 
           <button
             type="button"
             id="draw-btn-reset"
-            class="px-3.5 py-2.5 rounded-full bg-red-500/15 hover:bg-red-500/25 border border-red-400/30 text-xs font-semibold text-red-300 transition inline-flex items-center gap-1.5"
+            class="px-3.5 py-2.5 rounded-full bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-xs font-semibold text-red-600 transition inline-flex items-center gap-1.5"
           >
             ${Icons.reset('w-3.5 h-3.5')}
             <span>Reset</span>
           </button>
         </div>
-      </div>
+      </section>
 
       <!-- CENTER LIQUID GLASS STAGE MONITOR -->
-      <section class="max-w-5xl w-full mx-auto my-8 relative z-10 flex-1 flex flex-col justify-center">
+      <section class="w-full my-auto flex-1 flex flex-col justify-center">
         <div
           id="draw-stage-card"
-          class="liquid-glass-dark p-8 sm:p-12 lg:p-14 relative overflow-hidden min-h-[340px] flex flex-col justify-between transition-all ${
-            selectedQ ? 'stage-active-frame' : ''
+          class="liquid-glass p-8 sm:p-12 lg:p-14 relative overflow-hidden min-h-[340px] flex flex-col justify-between transition-all ${
+            selectedQ ? 'ring-2 ring-[#2563EB]' : ''
           }"
         >
           <!-- Countdown Overlay -->
           <div
             id="draw-countdown-overlay"
-            class="hidden absolute inset-0 z-30 bg-[#060A14]/90 backdrop-blur-2xl flex-col items-center justify-center"
+            class="hidden absolute inset-0 z-30 bg-white/90 backdrop-blur-2xl flex-col items-center justify-center"
           >
-            <span class="text-xs font-semibold uppercase tracking-widest text-[#06B6D4] mb-3">
+            <span class="text-xs font-semibold uppercase tracking-widest text-[#2563EB] mb-3">
               Mengacak Antrean Pertanyaan...
             </span>
             <span
               id="draw-countdown-number"
-              class="font-mono text-7xl sm:text-9xl font-bold text-white tabular-nums"
+              class="font-mono text-7xl sm:text-9xl font-bold text-[#0F172A] tabular-nums"
             >
               3
             </span>
           </div>
 
           <!-- Progress Pill Bar -->
-          <div id="draw-progress-wrapper" class="hidden w-full h-1.5 bg-white/[0.08] rounded-full overflow-hidden mb-6">
+          <div id="draw-progress-wrapper" class="hidden w-full h-1.5 bg-slate-200/80 rounded-full overflow-hidden mb-6">
             <div
               id="draw-progress-bar"
               class="h-full bg-gradient-to-r from-[#2563EB] to-[#06B6D4] transition-all duration-100"
@@ -173,30 +169,30 @@ export function renderRandomDrawPage() {
                 ? `
               <div class="space-y-7">
                 <div class="flex flex-wrap items-center justify-between gap-3">
-                  <span class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider bg-[#06B6D4] text-[#0F172A] shadow-sm">
+                  <span class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider bg-[#2563EB] text-white shadow-sm">
                     Pertanyaan Terpilih • #${String(selectedQ.number).padStart(2, '0')}
                   </span>
-                  <span class="font-mono text-xs font-semibold px-3.5 py-1.5 rounded-full bg-white/[0.08] text-[#06B6D4] border border-white/[0.12] tabular-nums">
+                  <span class="font-mono text-xs font-semibold px-3.5 py-1.5 rounded-full bg-[#2563EB]/10 text-[#2563EB] tabular-nums">
                     ▲ ${selectedQ.votes || 0} Dukungan Audiens
                   </span>
                 </div>
 
-                <blockquote class="text-2xl sm:text-4xl lg:text-[42px] font-bold text-white leading-[1.2] tracking-tight">
+                <blockquote class="text-2xl sm:text-4xl lg:text-[42px] font-bold text-[#0F172A] leading-[1.2] tracking-tight">
                   "${escapeHtml(selectedQ.text)}"
                 </blockquote>
 
-                <div class="pt-5 border-t border-white/[0.1] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div class="pt-5 border-t border-slate-200/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-full bg-gradient-to-b from-[#3B82F6] to-[#2563EB] text-white font-bold flex items-center justify-center text-sm border border-white/30">
+                    <div class="w-10 h-10 rounded-full bg-gradient-to-b from-[#3B82F6] to-[#2563EB] text-white font-bold flex items-center justify-center text-sm shadow-sm">
                       ${escapeHtml((selectedQ.name || 'P')[0].toUpperCase())}
                     </div>
                     <div>
-                      <span class="block text-xs text-slate-400">Dikirim oleh Peserta</span>
-                      <strong class="text-base sm:text-lg font-bold text-[#06B6D4]">${escapeHtml(selectedQ.name)}</strong>
+                      <span class="block text-xs text-slate-500">Dikirim oleh Peserta</span>
+                      <strong class="text-base sm:text-lg font-bold text-[#2563EB]">${escapeHtml(selectedQ.name)}</strong>
                     </div>
                   </div>
-                  <span class="font-mono text-xs text-emerald-400 font-semibold uppercase">
-                    ● ON STAGE
+                  <span class="font-mono text-xs text-emerald-600 font-semibold uppercase">
+                    ● SEDANG DIBAHAS
                   </span>
                 </div>
               </div>
@@ -204,24 +200,25 @@ export function renderRandomDrawPage() {
                 : pendingList.length === 0
                 ? `
               <div class="text-center py-8 space-y-3 max-w-xl mx-auto">
-                <h2 class="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+                <img src="./assets/logo.png" alt="SmartQ&A" class="w-14 h-14 object-contain mx-auto drop-shadow-sm" />
+                <h2 class="text-2xl sm:text-3xl font-bold text-[#0F172A] tracking-tight">
                   Belum ada pertanyaan Pending di antrean undian.
                 </h2>
-                <p class="text-sm text-slate-400 leading-relaxed">
+                <p class="text-sm text-slate-500 leading-relaxed">
                   Peserta dapat mengirim pertanyaan baru melalui QR Code atau Anda dapat menekan tombol <strong>Reset</strong> di kanan atas untuk mengulang antrean undian.
                 </p>
               </div>
             `
                 : `
               <div class="text-center py-8 space-y-4 max-w-2xl mx-auto">
-                <div class="w-16 h-16 rounded-[22px] bg-white/[0.08] border border-white/[0.15] flex items-center justify-center text-[#06B6D4] mx-auto shadow-inner">
+                <div class="w-16 h-16 rounded-[22px] bg-[#2563EB]/10 border border-white flex items-center justify-center text-[#2563EB] mx-auto shadow-sm">
                   ${Icons.shuffle('w-7 h-7')}
                 </div>
-                <h2 class="text-2xl sm:text-4xl font-bold text-white leading-tight tracking-tight">
+                <h2 class="text-2xl sm:text-4xl font-bold text-[#0F172A] leading-tight tracking-tight">
                   Tekan tombol di bawah untuk mengundi pertanyaan audiens secara acak.
                 </h2>
-                <p class="text-xs sm:text-sm text-slate-400 max-w-lg mx-auto leading-relaxed">
-                  Tersedia <strong class="text-white">${pendingList.length} pertanyaan</strong> siap diundi. Pertanyaan yang sudah terpilih tidak akan terundi kembali.
+                <p class="text-xs sm:text-sm text-slate-500 max-w-lg mx-auto leading-relaxed">
+                  Tersedia <strong class="text-[#2563EB]">${pendingList.length} pertanyaan</strong> siap diundi. Pertanyaan yang sudah terpilih tidak akan terundi kembali.
                 </p>
               </div>
             `
@@ -249,7 +246,7 @@ export function renderRandomDrawPage() {
               type="button"
               id="btn-mark-selected-answered"
               data-qid="${escapeHtml(selectedQ.id)}"
-              class="px-6 py-3.5 rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs sm:text-sm shadow-lg transition inline-flex items-center gap-2"
+              class="px-6 py-3.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm shadow-md transition inline-flex items-center gap-2"
             >
               ${Icons.check('w-4 h-4')}
               <span>Tandai Selesai Dijawab</span>
@@ -270,7 +267,7 @@ export function renderRandomDrawPage() {
               type="button"
               id="btn-skip-selected-question"
               data-qid="${escapeHtml(selectedQ.id)}"
-              class="px-5 py-3.5 rounded-full bg-white/[0.08] hover:bg-white/[0.15] text-white border border-white/[0.15] font-semibold text-xs sm:text-sm transition inline-flex items-center gap-2"
+              class="ios-btn-glass px-5 py-3.5 font-semibold text-xs sm:text-sm inline-flex items-center gap-2"
             >
               ${Icons.skip('w-4 h-4')}
               <span>Lewati</span>
@@ -281,12 +278,12 @@ export function renderRandomDrawPage() {
       </section>
 
       <!-- BOTTOM DRAW HISTORY CAPSULES -->
-      <section class="max-w-6xl w-full mx-auto relative z-10 pt-5 border-t border-white/[0.1]">
+      <section class="liquid-glass p-6">
         <div class="flex items-center justify-between mb-3">
-          <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-400">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500">
             Riwayat Terpilih Sesi Ini (${session.drawHistoryList.length})
           </h3>
-          <a href="#/admin/history" class="text-xs font-semibold text-[#06B6D4] hover:underline inline-flex items-center gap-1">
+          <a href="#/admin/history" class="text-xs font-semibold text-[#2563EB] hover:underline inline-flex items-center gap-1">
             <span>Arsip Lengkap</span>
             ${Icons.arrowRight('w-3.5 h-3.5')}
           </a>
@@ -301,15 +298,15 @@ export function renderRandomDrawPage() {
               .slice(0, 3)
               .map(
                 (h) => `
-              <div class="p-4 rounded-2xl bg-white/[0.06] border border-white/[0.1] backdrop-blur-md flex flex-col justify-between gap-2">
+              <div class="liquid-cell p-4 flex flex-col justify-between gap-2">
                 <div class="flex items-center justify-between gap-2">
-                  <span class="font-mono text-xs font-bold text-[#06B6D4]">#${String(h.number).padStart(2, '0')} • ${escapeHtml(h.name)}</span>
-                  <span class="text-[10px] px-2 py-0.5 rounded-full bg-white/[0.08] text-slate-300 uppercase font-semibold">
+                  <span class="font-mono text-xs font-bold text-[#2563EB]">#${String(h.number).padStart(2, '0')} • ${escapeHtml(h.name)}</span>
+                  <span class="text-[10px] px-2 py-0.5 rounded-full bg-[#2563EB]/10 text-[#2563EB] uppercase font-semibold">
                     ${escapeHtml(h.finalStatus || 'selected')}
                   </span>
                 </div>
-                <p class="text-xs text-slate-200 line-clamp-2 leading-relaxed">"${escapeHtml(h.text)}"</p>
-                <span class="text-[10px] text-slate-500 font-mono">${formatTimeAgo(h.selectedAt)}</span>
+                <p class="text-xs text-slate-700 line-clamp-2 leading-relaxed">"${escapeHtml(h.text)}"</p>
+                <span class="text-[10px] text-slate-400 font-mono">${formatTimeAgo(h.selectedAt)}</span>
               </div>
             `
               )
@@ -342,7 +339,7 @@ async function triggerRandomDrawProcess(sessionId) {
     if (nextBtn) nextBtn.disabled = true;
 
     if (stageCard) {
-      stageCard.classList.remove('stage-active-frame');
+      stageCard.classList.remove('ring-2', 'ring-[#2563EB]');
     }
 
     await runSlotMachineAnimation({
@@ -368,13 +365,13 @@ async function triggerRandomDrawProcess(sessionId) {
         if (stageContent && currentCandidate) {
           stageContent.innerHTML = `
             <div class="space-y-4 text-center">
-              <span class="inline-block px-3.5 py-1 rounded-full text-xs font-mono font-bold bg-[#2563EB]/30 text-[#06B6D4] border border-[#06B6D4]/40">
+              <span class="inline-block px-3.5 py-1 rounded-full text-xs font-mono font-bold bg-[#2563EB]/12 text-[#2563EB]">
                 Mengundi Kandidat #${String(currentCandidate.number).padStart(2, '0')}
               </span>
-              <p class="text-2xl sm:text-4xl font-bold text-white leading-snug">
+              <p class="text-2xl sm:text-4xl font-bold text-[#0F172A] leading-snug">
                 "${escapeHtml(currentCandidate.text)}"
               </p>
-              <p class="text-sm font-semibold text-[#06B6D4]">
+              <p class="text-sm font-semibold text-[#2563EB]">
                 Pengirim: ${escapeHtml(currentCandidate.name)}
               </p>
             </div>

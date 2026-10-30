@@ -85,29 +85,24 @@ export function renderApp() {
   const selectionEnd = activeEl && 'selectionEnd' in activeEl ? activeEl.selectionEnd : null;
 
   const activeSession = getSessionById();
-  const isDarkStageRoute = currentPath === '/admin/draw';
 
   appEl.innerHTML = `
     ${renderNavbar(currentPath)}
     <div class="flex-1 flex flex-col">
       ${pageHtml}
     </div>
-    <footer class="${
-      isDarkStageRoute
-        ? 'bg-[#060A14] border-t border-white/[0.08] text-slate-400'
-        : 'text-slate-500'
-    } py-6 px-4 sm:px-6 lg:px-8 text-xs">
+    <footer class="text-slate-500 py-6 px-4 sm:px-6 lg:px-8 text-xs">
       <div class="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
         <div class="flex items-center gap-2.5">
           <img src="./assets/logo.png" alt="SmartQ&A" class="w-5 h-5 object-contain" />
-          <span class="font-bold ${isDarkStageRoute ? 'text-white' : 'text-[#0F172A]'}">SmartQ&amp;A</span>
+          <span class="font-bold text-[#0F172A]">SmartQ&amp;A</span>
           <span>•</span>
           <span>Interactive Audience Question &amp; Answer System</span>
         </div>
         <div class="flex flex-wrap items-center gap-4 text-xs font-medium">
           ${
             activeSession
-              ? `<span class="font-mono text-[11px]">Sesi: <strong class="${isDarkStageRoute ? 'text-[#06B6D4]' : 'text-[#2563EB]'}">${escapeHtml(activeSession.id)}</strong></span>`
+              ? `<span class="font-mono text-[11px]">Sesi: <strong class="text-[#2563EB]">${escapeHtml(activeSession.id)}</strong></span>`
               : ''
           }
           <a href="#/participant" class="hover:underline">Peserta</a>

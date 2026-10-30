@@ -178,18 +178,18 @@ export function renderAdminDashboardPage() {
       ${
         selectedQ
           ? `
-        <section class="liquid-glass-dark text-white p-6 stage-active-frame">
+        <section class="liquid-glass p-6 ring-2 ring-[#2563EB]">
           <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div class="space-y-1.5">
               <div class="flex flex-wrap items-center gap-2.5">
-                <span class="px-3 py-1 rounded-full text-[11px] font-bold bg-[#06B6D4] text-[#0F172A]">
-                  ON STAGE • #${String(selectedQ.number).padStart(2, '0')}
+                <span class="px-3 py-1 rounded-full text-[11px] font-bold bg-[#2563EB] text-white">
+                  SEDANG DIBAHAS • #${String(selectedQ.number).padStart(2, '0')}
                 </span>
-                <span class="text-xs text-slate-300 font-medium">
-                  Pengirim: <strong class="text-white">${escapeHtml(selectedQ.name)}</strong> • ${selectedQ.votes || 0} Suara
+                <span class="text-xs text-slate-500 font-medium">
+                  Pengirim: <strong class="text-[#0F172A]">${escapeHtml(selectedQ.name)}</strong> • ${selectedQ.votes || 0} Suara
                 </span>
               </div>
-              <p class="text-lg sm:text-xl font-bold text-white leading-snug">
+              <p class="text-lg sm:text-xl font-bold text-[#0F172A] leading-snug">
                 "${escapeHtml(selectedQ.text)}"
               </p>
             </div>
@@ -198,7 +198,7 @@ export function renderAdminDashboardPage() {
                 type="button"
                 data-action="answered"
                 data-qid="${escapeHtml(selectedQ.id)}"
-                class="btn-admin-q-action px-4 py-2.5 rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-semibold text-xs transition inline-flex items-center gap-1.5"
+                class="btn-admin-q-action px-4 py-2.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs transition inline-flex items-center gap-1.5 shadow-sm"
               >
                 ${Icons.check('w-3.5 h-3.5')}
                 <span>Tandai Dijawab</span>
@@ -207,7 +207,7 @@ export function renderAdminDashboardPage() {
                 type="button"
                 data-action="skipped"
                 data-qid="${escapeHtml(selectedQ.id)}"
-                class="btn-admin-q-action px-4 py-2.5 rounded-full bg-white/[0.1] hover:bg-white/[0.18] text-white border border-white/[0.15] font-semibold text-xs transition inline-flex items-center gap-1.5"
+                class="btn-admin-q-action ios-btn-glass px-4 py-2.5 font-semibold text-xs inline-flex items-center gap-1.5"
               >
                 ${Icons.skip('w-3.5 h-3.5')}
                 <span>Lewati</span>
