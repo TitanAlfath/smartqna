@@ -30,13 +30,6 @@ export function renderLandingPage() {
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
           <!-- Left Column (7 Cols): Cupertino Typography & Capsule Controls -->
           <div class="lg:col-span-7 space-y-6">
-            <div class="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-white/80 border border-white shadow-sm backdrop-blur-md">
-              <img src="./assets/logo.png" alt="SmartQ&A" class="w-5 h-5 object-contain" />
-              <span class="text-[11px] font-semibold uppercase tracking-wider text-[#0F172A]">
-                Interactive Audience Q&amp;A System
-              </span>
-            </div>
-
             <h1 class="text-3xl sm:text-5xl font-bold tracking-tight text-[#0F172A] leading-[1.1]">
               Diskusi interaktif dalam antarmuka
               <span class="font-serif italic font-normal text-[#2563EB]">Liquid Glass</span>
@@ -222,41 +215,35 @@ export function renderLandingPage() {
         <div class="grid grid-cols-1 md:grid-cols-12 gap-5">
           <!-- Bento Widget 1 (7 Cols) -->
           <div class="md:col-span-7 liquid-glass p-6 sm:p-8 flex flex-col justify-between gap-4">
-            <div class="flex items-center justify-between">
-              <span class="px-3 py-1 rounded-full text-[11px] font-semibold bg-[#2563EB]/10 text-[#2563EB]">
-                01 • RANDOM QUESTION ENGINE
-              </span>
-              <span class="w-9 h-9 rounded-full bg-white/80 border border-white flex items-center justify-center text-[#2563EB] shadow-sm">
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <h3 class="text-xl font-bold text-[#0F172A] tracking-tight">
+                  Pengundian Pertanyaan Acak Siap Proyektor
+                </h3>
+                <p class="text-xs sm:text-sm text-slate-600 mt-2 leading-relaxed">
+                  Dirancang untuk ditampilkan di layar utama acara. Dilengkapi animasi perputaran pertanyaan yang halus, efek suara prosedural, serta penguncian transaksi database agar pertanyaan yang sudah terpilih tidak terundi kembali.
+                </p>
+              </div>
+              <span class="w-10 h-10 rounded-2xl bg-white/80 border border-white flex items-center justify-center text-[#2563EB] shadow-sm shrink-0">
                 ${Icons.shuffle('w-4 h-4')}
               </span>
-            </div>
-            <div>
-              <h3 class="text-xl font-bold text-[#0F172A] tracking-tight">
-                Pengundian Pertanyaan Acak Siap Proyektor
-              </h3>
-              <p class="text-xs sm:text-sm text-slate-600 mt-2 leading-relaxed">
-                Dirancang untuk ditampilkan di layar utama acara. Dilengkapi animasi perputaran pertanyaan yang halus, efek suara prosedural, serta penguncian transaksi database agar pertanyaan yang sudah terpilih tidak terundi kembali.
-              </p>
             </div>
           </div>
 
           <!-- Bento Widget 2 (5 Cols) -->
           <div class="md:col-span-5 liquid-glass p-6 sm:p-8 flex flex-col justify-between gap-4">
-            <div class="flex items-center justify-between">
-              <span class="px-3 py-1 rounded-full text-[11px] font-semibold bg-[#06B6D4]/15 text-[#0F172A]">
-                02 • AKSES INSTAN
-              </span>
-              <span class="w-9 h-9 rounded-full bg-white/80 border border-white flex items-center justify-center text-[#0F172A] shadow-sm">
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <h3 class="text-xl font-bold text-[#0F172A] tracking-tight">
+                  Scan QR Tanpa Login
+                </h3>
+                <p class="text-xs sm:text-sm text-slate-600 mt-2 leading-relaxed">
+                  Peserta cukup memindai QR Code untuk bertanya atas nama pribadi maupun anonim, serta memberikan upvote secara real-time.
+                </p>
+              </div>
+              <span class="w-10 h-10 rounded-2xl bg-white/80 border border-white flex items-center justify-center text-[#0F172A] shadow-sm shrink-0">
                 ${Icons.qr('w-4 h-4')}
               </span>
-            </div>
-            <div>
-              <h3 class="text-xl font-bold text-[#0F172A] tracking-tight">
-                Scan QR Tanpa Login
-              </h3>
-              <p class="text-xs sm:text-sm text-slate-600 mt-2 leading-relaxed">
-                Peserta cukup memindai QR Code untuk bertanya atas nama pribadi maupun anonim, serta memberikan upvote secara real-time.
-              </p>
             </div>
           </div>
         </div>

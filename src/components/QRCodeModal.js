@@ -40,15 +40,11 @@ export async function openQRCodeModal(sessionId, sessionName) {
         ${Icons.close('w-4 h-4')}
       </button>
 
-      <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold bg-[#2563EB]/10 text-[#2563EB]">
-        AKSES PESERTA • ${escapeHtml(sessionId)}
-      </span>
-
-      <h3 class="text-xl font-bold text-[#0F172A] mt-2.5 tracking-tight">
+      <h3 class="text-xl font-bold text-[#0F172A] mt-1 tracking-tight">
         ${escapeHtml(sessionName)}
       </h3>
       <p class="text-xs text-slate-500 mt-1">
-        Arahkan kamera iPhone atau Android untuk langsung bergabung ke sesi.
+        Kode Sesi: <strong class="font-mono text-[#2563EB]">${escapeHtml(sessionId)}</strong> • Arahkan kamera ponsel untuk bergabung.
       </p>
 
       <!-- QR Code Squircle Frame -->

@@ -26,10 +26,7 @@ export function renderSessionManagementPage() {
         <div class="flex items-center gap-3.5">
           <img src="./assets/logo.png" alt="SmartQ&A" class="w-11 h-11 object-contain drop-shadow-sm shrink-0" />
           <div>
-            <span class="inline-block px-3 py-0.5 rounded-full text-[11px] font-semibold bg-[#2563EB]/10 text-[#2563EB]">
-              MANAJEMEN SESI KEGIATAN
-            </span>
-            <h1 class="text-xl sm:text-2xl font-bold text-[#0F172A] tracking-tight mt-1">
+            <h1 class="text-xl sm:text-2xl font-bold text-[#0F172A] tracking-tight">
               Tambah &amp; Kelola Sesi Q&amp;A
             </h1>
             <p class="text-xs text-slate-500 mt-0.5">

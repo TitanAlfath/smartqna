@@ -20,13 +20,10 @@ export function renderAdminLoginPage() {
           <div class="w-16 h-16 rounded-[22px] bg-white/85 border border-white flex items-center justify-center mx-auto shadow-md p-2">
             <img src="./assets/logo.png" alt="Logo SmartQ&A" class="w-full h-full object-contain drop-shadow-sm" />
           </div>
-          <span class="inline-block mt-4 px-3 py-1 rounded-full text-[11px] font-semibold bg-[#2563EB]/10 text-[#2563EB]">
-            PANEL PENYELENGGARA Q&amp;A
-          </span>
-          <h1 class="text-2xl font-bold text-[#0F172A] mt-2 tracking-tight">
+          <h1 class="text-2xl font-bold text-[#0F172A] mt-4 tracking-tight">
             Mulai &amp; Kelola Sesi Q&amp;A
           </h1>
-          <p class="text-xs text-slate-500 mt-1 leading-relaxed">
+          <p class="text-xs text-slate-500 mt-1.5 leading-relaxed">
             Masuk untuk menambahkan sesi kegiatan baru, mengelola pertanyaan peserta, dan mengaktifkan layar undian.
           </p>
         </div>

@@ -55,18 +55,21 @@ export function renderRandomDrawPage() {
 
       <!-- Top Projector Capsule Bar -->
       <div class="max-w-6xl w-full mx-auto relative z-10 flex flex-wrap items-center justify-between gap-4 pb-5 border-b border-white/[0.1]">
-        <div>
-          <div class="flex items-center gap-2.5">
-            <span class="px-3 py-1 rounded-full text-[11px] font-semibold uppercase tracking-wider bg-[#06B6D4]/15 text-[#06B6D4] border border-[#06B6D4]/30">
-              Stage Projector • Random Draw
-            </span>
-            <span class="font-mono text-xs px-3 py-1 rounded-full bg-white/[0.08] text-slate-200 border border-white/[0.12]">
-              ${escapeHtml(session.id)}
-            </span>
+        <div class="flex items-center gap-3.5">
+          <img src="./assets/logo.png" alt="SmartQ&A" class="w-10 h-10 object-contain drop-shadow-md shrink-0" />
+          <div>
+            <div class="flex items-center gap-2">
+              <h1 class="text-xl sm:text-2xl font-bold text-white tracking-tight">
+                ${escapeHtml(session.name)}
+              </h1>
+              <span class="font-mono text-xs px-2.5 py-0.5 rounded-full bg-white/[0.08] text-[#06B6D4] border border-white/[0.12]">
+                ${escapeHtml(session.id)}
+              </span>
+            </div>
+            <p class="text-xs text-slate-400 mt-0.5">
+              ${escapeHtml(session.speaker || 'Sesi Tanya Jawab')}
+            </p>
           </div>
-          <h1 class="text-xl sm:text-2xl font-bold text-white mt-2 tracking-tight">
-            ${escapeHtml(session.name)}
-          </h1>
         </div>
 
         <!-- Telemetry Capsule & Utility Pills -->
@@ -201,14 +204,11 @@ export function renderRandomDrawPage() {
                 : pendingList.length === 0
                 ? `
               <div class="text-center py-8 space-y-3 max-w-xl mx-auto">
-                <span class="inline-block px-3.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-400/30">
-                  Antrean Selesai
-                </span>
                 <h2 class="text-2xl sm:text-3xl font-bold text-white tracking-tight">
-                  Seluruh pertanyaan Pending telah selesai diundi.
+                  Belum ada pertanyaan Pending di antrean undian.
                 </h2>
                 <p class="text-sm text-slate-400 leading-relaxed">
-                  Peserta masih dapat mengirim pertanyaan baru atau Anda dapat menekan tombol <strong>Reset</strong> di kanan atas untuk mengulang antrean undian.
+                  Peserta dapat mengirim pertanyaan baru melalui QR Code atau Anda dapat menekan tombol <strong>Reset</strong> di kanan atas untuk mengulang antrean undian.
                 </p>
               </div>
             `
@@ -217,14 +217,11 @@ export function renderRandomDrawPage() {
                 <div class="w-16 h-16 rounded-[22px] bg-white/[0.08] border border-white/[0.15] flex items-center justify-center text-[#06B6D4] mx-auto shadow-inner">
                   ${Icons.shuffle('w-7 h-7')}
                 </div>
-                <span class="inline-block text-xs font-semibold uppercase tracking-widest text-[#06B6D4]">
-                  Siap Mengundi ${pendingList.length} Pertanyaan Pending
-                </span>
                 <h2 class="text-2xl sm:text-4xl font-bold text-white leading-tight tracking-tight">
                   Tekan tombol di bawah untuk mengundi pertanyaan audiens secara acak.
                 </h2>
                 <p class="text-xs sm:text-sm text-slate-400 max-w-lg mx-auto leading-relaxed">
-                  Pertanyaan yang sudah terpilih, selesai dijawab, atau dilewati tidak akan masuk ke putaran undian berikutnya.
+                  Tersedia <strong class="text-white">${pendingList.length} pertanyaan</strong> siap diundi. Pertanyaan yang sudah terpilih tidak akan terundi kembali.
                 </p>
               </div>
             `

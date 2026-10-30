@@ -44,10 +44,7 @@ export function renderQuestionHistoryPage() {
       <!-- Liquid Glass Header -->
       <section class="liquid-glass p-6 sm:p-7 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div class="space-y-1">
-          <span class="inline-block px-3 py-1 rounded-full text-[11px] font-semibold bg-[#2563EB]/10 text-[#2563EB]">
-            ARSIP &amp; REKAPITULASI
-          </span>
-          <h1 class="text-xl sm:text-2xl font-bold text-[#0F172A] tracking-tight pt-1">
+          <h1 class="text-xl sm:text-2xl font-bold text-[#0F172A] tracking-tight">
             Riwayat Pertanyaan Terpilih
           </h1>
           <p class="text-xs text-slate-500">
