@@ -1,0 +1,47 @@
+{
+  "rules": {
+    "sessions": {
+      ".read": true,
+      "$sessionId": {
+        ".write": "auth != null",
+        "questions": {
+          ".read": true,
+          "$questionId": {
+            ".write": "auth != null || (!data.exists() && newData.exists() && root.child('sessions/' + $sessionId + '/status').val() === 'active' && root.child('sessions/' + $sessionId + '/allowQuestions').val() !== false)",
+            ".validate": "newData.hasChildren(['name', 'text', 'status', 'createdAt']) && newData.child('text').isString() && newData.child('text').val().length > 0 && newData.child('text').val().length <= 500 && (auth != null || newData.child('status').val() === 'pending')",
+            "votes": {
+              ".write": true,
+              ".validate": "newData.isNumber() && newData.val() >= 0"
+            },
+            "status": {
+              ".write": "auth != null",
+              ".validate": "newData.val() === 'pending' || newData.val() === 'selected' || newData.val() === 'answered' || newData.val() === 'skipped'"
+            }
+          }
+        },
+        "drawState": {
+          ".read": true,
+          ".write": "auth != null"
+        }
+      }
+    },
+    "votes": {
+      "$sessionId": {
+        "$questionId": {
+          ".read": true,
+          "$participantId": {
+            ".write": "!data.exists() || data.val() === true",
+            ".validate": "newData.isBoolean()"
+          }
+        }
+      }
+    },
+    "admin": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid"
+      }
+    }
+  }
+}
+

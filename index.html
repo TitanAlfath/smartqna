@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="id" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="description" content="SmartQ&A — Sistem Tanya Jawab Interaktif Real-Time dan Pengundian Pertanyaan Acak untuk Seminar, Workshop, dan Kuliah Umum." />
+  <meta name="theme-color" content="#0F172A" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="SmartQ&A" />
+  <meta property="og:title" content="SmartQ&A — Live Audience Question & Answer System" />
+  <meta property="og:description" content="Kirim pertanyaan seminar secara real-time melalui QR Code tanpa perlu membuat akun." />
+  <meta property="og:type" content="website" />
+  <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+  <link rel="manifest" href="./manifest.json" />
+  <title>SmartQ&A — Live Audience Question &amp; Answer System</title>
+  <!-- Typography Pairing: Plus Jakarta Sans, Instrument Serif, JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+</head>
+<body class="bg-[#EEF2F7] text-[#0F172A] font-sans antialiased selection:bg-[#2563EB] selection:text-white min-h-screen flex flex-col">
+  <!-- Root Application Container -->
+  <div id="app" class="flex-1 flex flex-col min-h-screen"></div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0" role="status" aria-live="polite"></div>
+
+  <!-- Main Script Entry -->
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

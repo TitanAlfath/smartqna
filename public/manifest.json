@@ -1,0 +1,18 @@
+{
+  "name": "SmartQ&A — Interactive Audience Q&A System",
+  "short_name": "SmartQ&A",
+  "description": "Sistem Tanya Jawab Interaktif Real-Time dan Pengundian Pertanyaan Acak untuk Seminar, Workshop, dan Kuliah Umum.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#EEF2F7",
+  "theme_color": "#0F172A",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "./favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
