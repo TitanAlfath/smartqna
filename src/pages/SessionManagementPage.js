@@ -1,5 +1,5 @@
 /**
- * SmartQ&A — 7. Session Management Page (iOS Liquid Glass Grouped Sheets)
+ * SmartQ&A — 7. Session Management Page (Clean Minimalist Liquid Glass Sheets)
  */
 
 import {
@@ -21,7 +21,7 @@ export function renderSessionManagementPage() {
 
   return `
     <main class="max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-8 space-y-6">
-      <!-- Liquid Glass Header -->
+      <!-- Header -->
       <section class="liquid-glass p-6 sm:p-7 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div class="flex items-center gap-3.5">
           <img src="./assets/logo.png" alt="SmartQ&A" class="w-11 h-11 object-contain drop-shadow-sm shrink-0" />
@@ -50,15 +50,12 @@ export function renderSessionManagementPage() {
       </section>
 
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        <!-- Left (5 Cols): iOS Form Sheet -->
+        <!-- Left (5 Cols): Form Sheet -->
         <section class="lg:col-span-5 liquid-glass p-6 sm:p-7">
-          <div class="pb-4 border-b border-slate-200/70 flex items-center justify-between">
+          <div class="pb-4 border-b border-slate-200/70">
             <h2 class="text-base font-bold text-[#0F172A] tracking-tight">
               Buat Sesi Q&amp;A Baru
             </h2>
-            <span class="w-8 h-8 rounded-full bg-[#2563EB]/10 text-[#2563EB] flex items-center justify-center">
-              ${Icons.plus('w-4 h-4')}
-            </span>
           </div>
 
           <form id="create-session-form" class="mt-5 space-y-4">
@@ -146,39 +143,30 @@ export function renderSessionManagementPage() {
                       <article class="liquid-glass p-6 transition ${
                         isPrimaryActive ? 'ring-2 ring-[#2563EB]' : ''
                       }">
-                        <div class="flex flex-wrap items-center justify-between gap-2">
-                          <div class="flex items-center gap-2">
-                            <span class="font-mono text-xs font-bold px-3 py-1 rounded-full bg-[#0F172A] text-[#06B6D4]">
-                              ${escapeHtml(ses.id)}
-                            </span>
-                            ${
-                              isPrimaryActive
-                                ? `<span class="px-3 py-1 rounded-full text-[11px] font-semibold bg-[#2563EB]/15 text-[#2563EB]">★ Sesi Utama</span>`
-                                : ''
-                            }
-                            <span class="px-3 py-1 rounded-full text-[11px] font-semibold ${
-                              ses.status === 'active'
-                                ? 'bg-emerald-500/15 text-emerald-800 border border-emerald-500/20'
-                                : 'bg-slate-200/80 text-slate-600'
-                            }">
-                              ${ses.status === 'active' ? '● Aktif' : 'Selesai'}
-                            </span>
+                        <div class="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
+                          <div class="flex items-center gap-2 font-medium">
+                            <span class="font-mono font-bold text-[#2563EB]">Kode: ${escapeHtml(ses.id)}</span>
+                            <span>•</span>
+                            <span>${ses.status === 'active' ? 'Sesi Aktif' : 'Selesai'}</span>
+                            ${isPrimaryActive ? `<span>• <strong class="text-[#0F172A]">Sesi Utama</strong></span>` : ''}
                           </div>
-                          <span class="text-xs text-slate-400 font-mono">Dibuat ${formatTimeAgo(ses.createdAt)}</span>
+                          <span>Dibuat ${formatTimeAgo(ses.createdAt)}</span>
                         </div>
 
-                        <h3 class="text-lg font-bold text-[#0F172A] mt-3 tracking-tight">
+                        <h3 class="text-lg font-bold text-[#0F172A] mt-2 tracking-tight">
                           ${escapeHtml(ses.name)}
                         </h3>
-                        <p class="text-xs font-semibold text-[#2563EB] mt-0.5">
+                        <p class="text-xs font-semibold text-slate-600 mt-0.5">
                           Pemateri: ${escapeHtml(ses.speaker || '-')}
                         </p>
-                        <p class="text-xs text-slate-500 mt-1 leading-relaxed">
-                          ${escapeHtml(ses.description || '')}
-                        </p>
+                        ${
+                          ses.description
+                            ? `<p class="text-xs text-slate-500 mt-1 leading-relaxed">${escapeHtml(ses.description)}</p>`
+                            : ''
+                        }
 
                         <div class="mt-4 pt-4 border-t border-slate-200/70 flex flex-wrap items-center justify-between gap-3">
-                          <div class="flex items-center gap-4 text-xs font-semibold text-slate-600 font-mono tabular-nums">
+                          <div class="flex items-center gap-3 text-xs font-semibold text-slate-600">
                             <span>${qCount} Pertanyaan</span>
                             <span>•</span>
                             <span>${hCount} Diundi</span>
@@ -229,9 +217,7 @@ export function renderSessionManagementPage() {
                               type="button"
                               data-toggle-status-sid="${escapeHtml(ses.id)}"
                               data-current-status="${escapeHtml(ses.status)}"
-                              class="btn-session-toggle-status ios-btn-glass px-3.5 py-1.5 text-xs font-semibold ${
-                                ses.status === 'active' ? 'text-amber-800' : 'text-emerald-700'
-                              }"
+                              class="btn-session-toggle-status ios-btn-glass px-3.5 py-1.5 text-xs font-semibold text-slate-700"
                             >
                               ${ses.status === 'active' ? 'Akhiri Sesi' : 'Buka Kembali'}
                             </button>
@@ -254,7 +240,7 @@ export function renderSessionManagementPage() {
                             <button
                               type="button"
                               data-delete-sid="${escapeHtml(ses.id)}"
-                              class="btn-session-delete p-2 rounded-full text-slate-400 hover:text-red-600 hover:bg-red-500/10 transition"
+                              class="btn-session-delete p-2 rounded-full text-slate-400 hover:text-red-600 transition"
                               title="Hapus sesi ini"
                             >
                               ${Icons.trash('w-3.5 h-3.5')}

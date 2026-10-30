@@ -1,5 +1,5 @@
 /**
- * SmartQ&A — 2. Participant Page (iPhone Liquid Glass UI)
+ * SmartQ&A — 2. Participant Page (Clean Minimalist Liquid Glass UI)
  */
 
 import {
@@ -73,62 +73,43 @@ export function renderParticipantPage() {
     questions.sort((a, b) => b.createdAt - a.createdAt);
   }
 
-  const statusPill = (status) => {
-    switch (status) {
-      case 'selected':
-        return `<span class="px-3 py-1 rounded-full text-[11px] font-semibold bg-[#0F172A] text-[#06B6D4] shadow-sm">Sedang Dibahas</span>`;
-      case 'answered':
-        return `<span class="px-3 py-1 rounded-full text-[11px] font-semibold bg-emerald-500/15 text-emerald-800 border border-emerald-500/20">Terjawab</span>`;
-      case 'skipped':
-        return `<span class="px-3 py-1 rounded-full text-[11px] font-medium bg-slate-200/80 text-slate-600">Dilewati</span>`;
-      default:
-        return `<span class="px-3 py-1 rounded-full text-[11px] font-semibold bg-amber-500/15 text-amber-800 border border-amber-500/20">Pending</span>`;
-    }
-  };
-
   return `
     <main class="max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-8 space-y-6">
-      <!-- Top Liquid Glass Session Card -->
+      <!-- Top Session Header Card -->
       <section class="liquid-glass p-5 sm:p-7">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div class="space-y-1.5">
-            <div class="flex flex-wrap items-center gap-2">
-              <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${
-                isSessionActive
-                  ? 'bg-emerald-500/15 text-emerald-800 border border-emerald-500/25'
-                  : 'bg-amber-500/15 text-amber-800 border border-amber-500/25'
-              }">
-                <span class="w-2 h-2 rounded-full ${isSessionActive ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}"></span>
-                ${isSessionActive ? 'Sesi Tanya Jawab Aktif' : 'Penerimaan Ditutup'}
-              </span>
-              <span class="font-mono text-xs font-semibold px-3 py-1 rounded-full bg-[#0F172A] text-[#06B6D4]">
-                ${escapeHtml(session.id)}
-              </span>
-            </div>
-            <h1 class="text-xl sm:text-2xl font-bold text-[#0F172A] tracking-tight pt-1">
+          <div class="space-y-1">
+            <h1 class="text-xl sm:text-2xl font-bold text-[#0F172A] tracking-tight">
               ${escapeHtml(session.name)}
             </h1>
             <p class="text-xs text-slate-600">
               Narasumber: <strong class="text-[#0F172A] font-semibold">${escapeHtml(session.speaker || 'Pemateri Utama')}</strong>
+              ${session.description ? ` • ${escapeHtml(session.description)}` : ''}
             </p>
           </div>
 
           <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full md:w-auto">
-            <label for="participant-session-select" class="sr-only">Pilih Sesi</label>
-            <select
-              id="participant-session-select"
-              class="ios-btn-glass px-4 py-2.5 text-xs font-semibold text-[#0F172A] focus:outline-none cursor-pointer w-full sm:w-auto max-w-full truncate"
-            >
-              ${state.sessionsList
-                .map(
-                  (s) => `
-                <option value="${escapeHtml(s.id)}" ${s.id === session.id ? 'selected' : ''}>
-                  ${escapeHtml(s.name)} (${escapeHtml(s.id)})
-                </option>
-              `
-                )
-                .join('')}
-            </select>
+            ${
+              state.sessionsList.length > 1
+                ? `
+              <label for="participant-session-select" class="sr-only">Pilih Sesi</label>
+              <select
+                id="participant-session-select"
+                class="ios-btn-glass px-4 py-2.5 text-xs font-semibold text-[#0F172A] focus:outline-none cursor-pointer w-full sm:w-auto max-w-full truncate"
+              >
+                ${state.sessionsList
+                  .map(
+                    (s) => `
+                  <option value="${escapeHtml(s.id)}" ${s.id === session.id ? 'selected' : ''}>
+                    ${escapeHtml(s.name)}
+                  </option>
+                `
+                  )
+                  .join('')}
+              </select>
+            `
+                : ''
+            }
 
             <button
               type="button"
@@ -141,15 +122,14 @@ export function renderParticipantPage() {
           </div>
         </div>
 
-        <!-- iOS Live Activity Spotlight Banner (Jika ada pertanyaan yang sedang dipilih pemateri) -->
+        <!-- Spotlight Banner (Jika ada pertanyaan yang sedang dipilih pemateri) -->
         ${
           selectedQ
             ? `
           <div class="mt-5 liquid-cell p-5 ring-2 ring-[#2563EB] bg-white/90">
             <div class="flex flex-wrap items-center justify-between gap-2 mb-1.5">
-              <span class="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-[#2563EB]">
-                <span class="w-2 h-2 rounded-full bg-[#2563EB] animate-ping"></span>
-                Sedang Dibahas • Pertanyaan #${String(selectedQ.number).padStart(2, '0')}
+              <span class="text-xs font-bold text-[#2563EB]">
+                Pertanyaan Sedang Dibahas
               </span>
               <span class="text-xs text-slate-500 font-medium">
                 Oleh: <strong class="text-[#0F172A]">${escapeHtml(selectedQ.name)}</strong>
@@ -166,16 +146,11 @@ export function renderParticipantPage() {
 
       <!-- Workspace Grid: Left Composer (5 Col) + Right Feed (7 Col) -->
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        <!-- Left Column: iOS Liquid Glass Question Sheet -->
+        <!-- Left Column: Question Form -->
         <section class="lg:col-span-5 liquid-glass p-6 sm:p-7 lg:sticky lg:top-24">
-          <div class="pb-4 border-b border-slate-200/70 flex items-center justify-between">
-            <div>
-              <h2 class="text-base font-bold text-[#0F172A] tracking-tight">Kirim Pertanyaan</h2>
-              <p class="text-xs text-slate-500 mt-0.5">Langsung tampil di layar pemateri secara real-time.</p>
-            </div>
-            <span class="font-mono text-xs px-2.5 py-1 rounded-full bg-white/80 text-[#2563EB] font-semibold border border-white">
-              ${escapeHtml(session.id)}
-            </span>
+          <div class="pb-4 border-b border-slate-200/70">
+            <h2 class="text-base font-bold text-[#0F172A] tracking-tight">Kirim Pertanyaan</h2>
+            <p class="text-xs text-slate-500 mt-0.5">Langsung tampil di layar pemateri secara real-time.</p>
           </div>
 
           <div class="mt-5">
@@ -246,9 +221,6 @@ export function renderParticipantPage() {
             `
                 : `
               <div class="liquid-cell p-5 text-center space-y-2">
-                <div class="w-10 h-10 rounded-full bg-amber-500/15 text-amber-700 flex items-center justify-center mx-auto">
-                  ${Icons.lock('w-4 h-4')}
-                </div>
                 <h3 class="text-sm font-bold text-[#0F172A]">Penerimaan Pertanyaan Ditutup</h3>
                 <p class="text-xs text-slate-600 leading-relaxed">
                   Pemateri sedang menutup pengiriman pertanyaan baru, namun Anda tetap dapat memberikan dukungan suara pada pertanyaan yang sudah ada.
@@ -259,19 +231,16 @@ export function renderParticipantPage() {
           </div>
         </section>
 
-        <!-- Right Column: Liquid Glass Questions Feed & iOS Segmented Control -->
+        <!-- Right Column: Questions Feed -->
         <section class="lg:col-span-7 liquid-glass p-5 sm:p-7 space-y-5">
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-200/70">
-            <div class="flex items-center gap-2">
+            <div>
               <h2 class="text-base font-bold text-[#0F172A] tracking-tight">
-                Pertanyaan Audiens
+                Pertanyaan Audiens (${session.questionsList.length})
               </h2>
-              <span class="font-mono text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#2563EB]/10 text-[#2563EB] tabular-nums">
-                ${session.questionsList.length}
-              </span>
             </div>
 
-            <!-- iOS Segmented Control (4-Col Grid on Mobile, Inline Pill on Tablet/Desktop) -->
+            <!-- Filter Tabs -->
             <div class="ios-segmented grid grid-cols-4 sm:inline-flex items-center gap-1 w-full sm:w-auto">
               ${[
                 { id: 'latest', label: 'Terbaru' },
@@ -298,7 +267,7 @@ export function renderParticipantPage() {
             </div>
           </div>
 
-          <!-- Question Cells -->
+          <!-- Question List -->
           <div class="space-y-3">
             ${
               questions.length === 0
@@ -311,55 +280,46 @@ export function renderParticipantPage() {
                 : questions
                     .map((q) => {
                       const voted = hasParticipantVoted(session.id, q.id);
-                      const isMine = q.authorId === myPid;
                       const isSelected = q.status === 'selected';
                       return `
                         <article class="liquid-cell p-4 sm:p-5 ${
-                          isSelected ? 'ring-2 ring-[#06B6D4] bg-white/90' : ''
+                          isSelected ? 'ring-2 ring-[#2563EB] bg-white/95' : ''
                         }">
-                          <div class="flex items-start justify-between gap-3">
-                            <div class="flex items-center gap-2 flex-wrap">
-                              <span class="font-mono text-xs font-bold px-2.5 py-0.5 rounded-full bg-[#0F172A] text-[#06B6D4]">
-                                #${String(q.number).padStart(2, '0')}
-                              </span>
-                              <span class="text-xs font-bold text-[#0F172A]">
-                                ${escapeHtml(q.name)}
-                              </span>
-                              ${
-                                isMine
-                                  ? `<span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#2563EB]/10 text-[#2563EB]">Anda</span>`
-                                  : ''
-                              }
-                              <span class="text-[11px] text-slate-400">• ${formatTimeAgo(q.createdAt)}</span>
-                            </div>
-                            ${statusPill(q.status)}
+                          <div class="flex items-center justify-between gap-3">
+                            <span class="text-xs font-bold text-[#0F172A]">
+                              ${String(q.number).padStart(2, '0')}. ${escapeHtml(q.name)}
+                            </span>
+                            <span class="text-[11px] text-slate-400">
+                              ${formatTimeAgo(q.createdAt)}
+                            </span>
                           </div>
 
-                          <p class="mt-3 text-sm sm:text-[15px] text-[#0F172A] leading-relaxed break-words">
+                          <p class="mt-2.5 text-sm sm:text-[15px] text-[#0F172A] leading-relaxed break-words">
                             ${escapeHtml(q.text)}
                           </p>
 
-                          <div class="mt-4 pt-3 border-t border-slate-200/60 flex items-center justify-between">
-                            <span class="font-mono text-[11px] text-slate-400">
-                              ID: ${escapeHtml(q.id.slice(-6))}
+                          <div class="mt-3.5 pt-3 border-t border-slate-200/60 flex items-center justify-between">
+                            <span class="text-xs font-medium text-slate-500">
+                              ${
+                                q.status === 'answered'
+                                  ? 'Selesai dijawab'
+                                  : q.status === 'selected'
+                                  ? 'Sedang dibahas'
+                                  : 'Menunggu giliran'
+                              }
                             </span>
 
                             <button
                               type="button"
                               data-vote-id="${escapeHtml(q.id)}"
-                              class="btn-vote-question inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                              class="btn-vote-question inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
                                 voted
                                   ? 'ios-btn-primary'
                                   : 'ios-btn-glass hover:border-[#2563EB]/40'
                               }"
                             >
                               ${Icons.upvote('w-3.5 h-3.5')}
-                              <span>${voted ? 'Didukung' : 'Dukung'}</span>
-                              <span class="font-mono tabular-nums px-1.5 py-0.2 rounded-full ${
-                                voted ? 'bg-white/20 text-white' : 'bg-slate-900/[0.06] text-[#0F172A]'
-                              }">
-                                ${q.votes || 0}
-                              </span>
+                              <span>${voted ? 'Didukung' : 'Dukung'} (${q.votes || 0})</span>
                             </button>
                           </div>
                         </article>

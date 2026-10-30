@@ -1,5 +1,5 @@
 /**
- * SmartQ&A — 4. Admin Real-Time Question Dashboard (iOS Control Center & Liquid Glass UI)
+ * SmartQ&A — 4. Admin Real-Time Question Dashboard (Clean Minimalist Control Center)
  */
 
 import {
@@ -71,48 +71,52 @@ export function renderAdminDashboardPage() {
 
   const selectedQ = session.currentSelectedQuestion;
 
+  const statusText = (st) => {
+    if (st === 'selected') return 'Sedang Dibahas';
+    if (st === 'answered') return 'Terjawab';
+    if (st === 'skipped') return 'Dilewati';
+    return 'Menunggu';
+  };
+
   return `
     <main class="max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-8 space-y-6">
-      <!-- Top Liquid Glass Control Center Island -->
+      <!-- Top Control Center Header -->
       <section class="liquid-glass p-6 sm:p-7 space-y-6">
         <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
           <div class="space-y-1.5">
-            <div class="flex flex-wrap items-center gap-2">
-              <span class="px-3 py-1 rounded-full text-xs font-semibold ${
-                session.status === 'active'
-                  ? 'bg-emerald-500/15 text-emerald-800 border border-emerald-500/20'
-                  : 'bg-slate-200/80 text-slate-600'
-              }">
-                ${session.status === 'active' ? '● Sesi Aktif' : 'Sesi Selesai'}
-              </span>
-              <span class="font-mono text-xs font-semibold px-3 py-1 rounded-full bg-[#0F172A] text-[#06B6D4]">
-                ${escapeHtml(session.id)}
-              </span>
-              <label for="admin-switch-session" class="sr-only">Pilih Sesi</label>
-              <select
-                id="admin-switch-session"
-                class="ios-btn-glass px-3.5 py-1.5 sm:py-1 text-xs font-semibold text-[#0F172A] focus:outline-none cursor-pointer w-full sm:w-auto max-w-full truncate"
-              >
-                ${state.sessionsList
-                  .map(
-                    (s) => `
-                  <option value="${escapeHtml(s.id)}" ${s.id === session.id ? 'selected' : ''}>
-                    Ganti Sesi: ${escapeHtml(s.name)} (${escapeHtml(s.id)})
-                  </option>
-                `
-                  )
-                  .join('')}
-              </select>
-            </div>
-            <h1 class="text-xl sm:text-2xl font-bold text-[#0F172A] tracking-tight pt-1">
+            ${
+              state.sessionsList.length > 1
+                ? `
+              <div class="pb-1">
+                <label for="admin-switch-session" class="sr-only">Pilih Sesi</label>
+                <select
+                  id="admin-switch-session"
+                  class="ios-btn-glass px-3.5 py-1.5 text-xs font-semibold text-[#0F172A] focus:outline-none cursor-pointer w-full sm:w-auto max-w-full truncate"
+                >
+                  ${state.sessionsList
+                    .map(
+                      (s) => `
+                    <option value="${escapeHtml(s.id)}" ${s.id === session.id ? 'selected' : ''}>
+                      Sesi: ${escapeHtml(s.name)} (${escapeHtml(s.id)})
+                    </option>
+                  `
+                    )
+                    .join('')}
+                </select>
+              </div>
+            `
+                : ''
+            }
+            <h1 class="text-xl sm:text-2xl font-bold text-[#0F172A] tracking-tight">
               ${escapeHtml(session.name)}
             </h1>
             <p class="text-xs text-slate-500">
               Narasumber: <strong class="text-[#0F172A] font-semibold">${escapeHtml(session.speaker || '-')}</strong>
+              • Kode Sesi: <strong class="font-mono text-[#2563EB]">${escapeHtml(session.id)}</strong>
             </p>
           </div>
 
-          <!-- Capsule Actions (Responsive Mobile Grid & Desktop Flex) -->
+          <!-- Action Buttons -->
           <div class="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2.5 w-full lg:w-auto">
             <a
               href="#/admin/draw"
@@ -135,35 +139,31 @@ export function renderAdminDashboardPage() {
               <button
                 type="button"
                 id="admin-toggle-accepting"
-                class="px-4 py-3 rounded-full text-xs font-semibold transition border inline-flex items-center justify-center gap-1.5 ${
-                  session.allowQuestions !== false
-                    ? 'bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-900 border-emerald-500/25'
-                    : 'bg-amber-500/15 hover:bg-amber-500/25 text-amber-900 border-amber-500/25'
-                }"
+                class="ios-btn-glass px-4 py-3 text-xs font-semibold inline-flex items-center justify-center gap-1.5"
               >
-                ${session.allowQuestions !== false ? Icons.unlock('w-3.5 h-3.5') : Icons.lock('w-3.5 h-3.5')}
+                ${session.allowQuestions !== false ? Icons.unlock('w-3.5 h-3.5 text-emerald-600') : Icons.lock('w-3.5 h-3.5 text-amber-600')}
                 <span>${session.allowQuestions !== false ? 'Input: Dibuka' : 'Input: Ditutup'}</span>
               </button>
             </div>
           </div>
         </div>
 
-        <!-- 4 iOS Widget Telemetry Squircles -->
+        <!-- 4 Telemetry Cards -->
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3.5 pt-2">
           <div class="liquid-cell p-4 sm:p-5">
             <span class="block text-xs font-semibold text-slate-500">Total Masuk</span>
             <span class="block font-mono text-3xl font-bold text-[#0F172A] mt-1 tabular-nums">${totalCount}</span>
-            <span class="block text-[11px] text-slate-400 mt-0.5">Pertanyaan tercatat</span>
+            <span class="block text-[11px] text-slate-400 mt-0.5">Pertanyaan peserta</span>
           </div>
 
           <div class="liquid-cell p-4 sm:p-5">
-            <span class="block text-xs font-semibold text-[#2563EB]">Antrean Pending</span>
+            <span class="block text-xs font-semibold text-[#2563EB]">Menunggu</span>
             <span class="block font-mono text-3xl font-bold text-[#2563EB] mt-1 tabular-nums">${pendingCount}</span>
             <span class="block text-[11px] text-slate-400 mt-0.5">Siap diundi / dipilih</span>
           </div>
 
           <div class="liquid-cell p-4 sm:p-5">
-            <span class="block text-xs font-semibold text-[#06B6D4]">Sedang Dibahas</span>
+            <span class="block text-xs font-semibold text-[#0F172A]">Sedang Dibahas</span>
             <span class="block font-mono text-3xl font-bold text-[#0F172A] mt-1 tabular-nums">${selectedCount}</span>
             <span class="block text-[11px] text-slate-400 mt-0.5">Aktif di layar panggung</span>
           </div>
@@ -183,13 +183,8 @@ export function renderAdminDashboardPage() {
         <section class="liquid-glass p-6 ring-2 ring-[#2563EB]">
           <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div class="space-y-1.5">
-              <div class="flex flex-wrap items-center gap-2.5">
-                <span class="px-3 py-1 rounded-full text-[11px] font-bold bg-[#2563EB] text-white">
-                  SEDANG DIBAHAS • #${String(selectedQ.number).padStart(2, '0')}
-                </span>
-                <span class="text-xs text-slate-500 font-medium">
-                  Pengirim: <strong class="text-[#0F172A]">${escapeHtml(selectedQ.name)}</strong> • ${selectedQ.votes || 0} Suara
-                </span>
+              <div class="text-xs font-semibold text-[#2563EB]">
+                Sedang Dibahas • Pertanyaan #${String(selectedQ.number).padStart(2, '0')} oleh ${escapeHtml(selectedQ.name)} (${selectedQ.votes || 0} Dukungan)
               </div>
               <p class="text-lg sm:text-xl font-bold text-[#0F172A] leading-snug">
                 "${escapeHtml(selectedQ.text)}"
@@ -226,8 +221,8 @@ export function renderAdminDashboardPage() {
         <section class="lg:col-span-8 liquid-glass p-5 sm:p-7 space-y-5">
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-200/70">
             <div>
-              <h2 class="text-base font-bold text-[#0F172A] tracking-tight">Meja Moderasi Pertanyaan</h2>
-              <p class="text-xs text-slate-500 mt-0.5">Pilih pertanyaan secara manual atau kelola status antrean.</p>
+              <h2 class="text-base font-bold text-[#0F172A] tracking-tight">Daftar Pertanyaan Masuk (${totalCount})</h2>
+              <p class="text-xs text-slate-500 mt-0.5">Pertanyaan dari ponsel peserta muncul otomatis secara real-time.</p>
             </div>
 
             <select
@@ -235,19 +230,19 @@ export function renderAdminDashboardPage() {
               class="ios-btn-glass px-3.5 py-2 text-xs font-semibold text-[#0F172A] focus:outline-none cursor-pointer"
             >
               <option value="latest" ${adminSortBy === 'latest' ? 'selected' : ''}>Urutkan: Terbaru</option>
-              <option value="votes" ${adminSortBy === 'votes' ? 'selected' : ''}>Urutkan: Suara Terbanyak</option>
+              <option value="votes" ${adminSortBy === 'votes' ? 'selected' : ''}>Urutkan: Dukungan Terbanyak</option>
             </select>
           </div>
 
-          <!-- iOS Segmented Filter & Search Capsule -->
+          <!-- Filter & Search -->
           <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
             <div class="ios-segmented flex items-center gap-1 overflow-x-auto no-scrollbar max-w-full">
               ${[
                 { id: 'all', label: `Semua (${totalCount})` },
-                { id: 'pending', label: `Pending (${pendingCount})` },
-                { id: 'selected', label: `Selected (${selectedCount})` },
-                { id: 'answered', label: `Answered (${answeredCount})` },
-                { id: 'skipped', label: `Skipped (${skippedCount})` }
+                { id: 'pending', label: `Menunggu (${pendingCount})` },
+                { id: 'selected', label: `Dibahas (${selectedCount})` },
+                { id: 'answered', label: `Terjawab (${answeredCount})` },
+                { id: 'skipped', label: `Dilewati (${skippedCount})` }
               ]
                 .map(
                   (f) => `
@@ -282,50 +277,31 @@ export function renderAdminDashboardPage() {
               filteredQuestions.length === 0
                 ? `
               <div class="py-12 text-center">
-                <p class="text-sm font-semibold text-slate-600">Tidak ada pertanyaan yang cocok dengan filter.</p>
+                <p class="text-sm font-semibold text-slate-600">Belum ada pertanyaan pada tampilan ini.</p>
               </div>
             `
                 : filteredQuestions
                     .map((q) => {
-                      const statusPills = {
-                        pending: 'bg-amber-500/15 text-amber-800 border border-amber-500/20',
-                        selected: 'bg-[#0F172A] text-[#06B6D4]',
-                        answered: 'bg-emerald-500/15 text-emerald-800 border border-emerald-500/20',
-                        skipped: 'bg-slate-200/80 text-slate-600'
-                      };
                       return `
                         <article class="liquid-cell p-4 sm:p-5 ${
-                          q.status === 'selected' ? 'ring-2 ring-[#06B6D4] bg-white/90' : ''
+                          q.status === 'selected' ? 'ring-2 ring-[#2563EB] bg-white/95' : ''
                         }">
                           <div class="flex flex-wrap items-center justify-between gap-2">
                             <div class="flex items-center gap-2">
-                              <span class="font-mono text-xs font-bold px-2.5 py-0.5 rounded-full bg-[#0F172A] text-[#06B6D4]">
-                                #${String(q.number).padStart(2, '0')}
-                              </span>
                               <span class="text-xs font-bold text-[#0F172A]">
-                                ${escapeHtml(q.name)}
+                                ${String(q.number).padStart(2, '0')}. ${escapeHtml(q.name)}
                               </span>
-                              ${
-                                q.anonymous
-                                  ? `<span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-200/70 text-slate-600">Anonim</span>`
-                                  : ''
-                              }
                               <span class="text-[11px] text-slate-400">• ${formatTimeAgo(q.createdAt)}</span>
                             </div>
 
-                            <div class="flex items-center gap-2">
-                              <span class="font-mono text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#2563EB]/10 text-[#2563EB] tabular-nums">
-                                ▲ ${q.votes || 0}
-                              </span>
-                              <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold uppercase ${
-                                statusPills[q.status] || statusPills.pending
-                              }">
-                                ${escapeHtml(q.status)}
-                              </span>
+                            <div class="flex items-center gap-3 text-xs text-slate-500 font-medium">
+                              <span>${q.votes || 0} Dukungan</span>
+                              <span>•</span>
+                              <span class="font-semibold text-[#0F172A]">${statusText(q.status)}</span>
                             </div>
                           </div>
 
-                          <p class="mt-3 text-sm sm:text-[15px] text-[#0F172A] leading-relaxed">
+                          <p class="mt-2.5 text-sm sm:text-[15px] text-[#0F172A] leading-relaxed break-words">
                             ${escapeHtml(q.text)}
                           </p>
 
@@ -383,9 +359,9 @@ export function renderAdminDashboardPage() {
                                   type="button"
                                   data-action="pending"
                                   data-qid="${escapeHtml(q.id)}"
-                                  class="btn-admin-q-action ios-btn-glass px-3.5 py-1.5 text-xs font-semibold text-amber-800"
+                                  class="btn-admin-q-action ios-btn-glass px-3.5 py-1.5 text-xs font-semibold text-slate-700"
                                 >
-                                  Ke Pending
+                                  Kembalikan ke Antrean
                                 </button>
                               `
                                   : ''
@@ -395,7 +371,7 @@ export function renderAdminDashboardPage() {
                             <button
                               type="button"
                               data-delete-qid="${escapeHtml(q.id)}"
-                              class="btn-admin-q-delete px-3 py-1.5 rounded-full text-slate-400 hover:text-red-600 hover:bg-red-500/10 text-xs font-semibold inline-flex items-center gap-1 transition"
+                              class="btn-admin-q-delete px-3 py-1.5 rounded-full text-slate-400 hover:text-red-600 text-xs font-semibold inline-flex items-center gap-1 transition"
                             >
                               ${Icons.trash('w-3.5 h-3.5')}
                               <span>Hapus</span>
@@ -412,7 +388,7 @@ export function renderAdminDashboardPage() {
         <!-- Right (4 Cols): Control Center Switches & Live Activity -->
         <aside class="lg:col-span-4 space-y-6">
           <div class="liquid-glass p-6 space-y-4">
-            <h3 class="text-sm font-bold text-[#0F172A] tracking-tight">Kontrol Sesi Tanya Jawab</h3>
+            <h3 class="text-sm font-bold text-[#0F172A] tracking-tight">Pengaturan Sesi</h3>
 
             <label class="liquid-cell flex items-center justify-between p-3.5 cursor-pointer">
               <div>
@@ -457,7 +433,6 @@ export function renderAdminDashboardPage() {
           <div class="liquid-glass p-6">
             <div class="flex items-center justify-between mb-4">
               <h3 class="text-sm font-bold text-[#0F172A] tracking-tight">Aktivitas Terbaru</h3>
-              <span class="w-2 h-2 rounded-full bg-[#06B6D4] animate-pulse"></span>
             </div>
             <div class="space-y-2.5 max-h-80 overflow-y-auto pr-1">
               ${
@@ -579,7 +554,7 @@ export function bindAdminDashboardPageEvents() {
       if (!qid || !action) return;
       try {
         await updateQuestionStatus(session.id, qid, action, 'manual');
-        showToast(`Status pertanyaan diperbarui ke ${action.toUpperCase()}.`, 'success');
+        showToast('Status pertanyaan berhasil diperbarui.', 'success');
       } catch (err) {
         showToast(err.message || 'Gagal memperbarui status.', 'error');
       }

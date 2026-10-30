@@ -1,9 +1,9 @@
 /**
- * SmartQ&A — Production Firebase Realtime Database & Authentication Service
- * Menggunakan arsitektur Instant Local State + Safe Cloud Sync:
- * - Seluruh aksi (Login, Buat Sesi, Kirim Pertanyaan, Vote, Undian) dieksekusi instan (0ms).
- * - Operasi Cloud hanya dikirim apabila WebSocket Firebase benar-benar terhubung (.info/connected = true)
- *   dan menggunakan operasi update() tunggal agar tidak pernah memblokir atau merollback state lokal.
+ * SmartQ&A — Real-Time Cross-Device Sync & Authentication Service
+ * Menggabungkan:
+ * 1. Cloud Real-Time Relay (HTTPS SSE + JSON History) & Firebase Realtime Database
+ *    agar pertanyaan dari HP peserta langsung tampil real-time di Laptop Admin & halaman awal.
+ * 2. Sistem Registrasi & Login Admin terverifikasi (SHA-256 Password Hash) tanpa kredensial bawaan.
  */
 
 import { initializeApp, getApps } from 'firebase/app';
@@ -12,27 +12,25 @@ import {
   ref,
   set,
   update,
-  remove,
   onValue
 } from 'firebase/database';
-import {
-  getAuth,
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  signOut
-} from 'firebase/auth';
 import { pickSecureRandomIndex } from '../utils/randomDraw.js';
 
-const STORAGE_KEY_DB = 'smartqa_clean_db_v2';
+const STORAGE_KEY_DB = 'smartqa_clean_db_v3';
 const STORAGE_KEY_FB_CONFIG = 'smartqa_custom_firebase_config';
-const STORAGE_KEY_ADMIN = 'smartqa_admin_session';
+const STORAGE_KEY_ADMIN = 'smartqa_admin_auth_v3';
 const STORAGE_KEY_PARTICIPANT = 'smartqa_participant_uid';
 const STORAGE_KEY_COOLDOWN = 'smartqa_last_submit_ts';
 
-// Bersihkan cache database lama yang masih menyimpan sesi seminar bawaan
+// Channel unik untuk sinkronisasi real-time lintas perangkat (HP <-> Laptop)
+const CLOUD_RELAY_TOPIC = 'smartqa_live_sync_qnaproject_f87ff_v3';
+const CLOUD_RELAY_URL = `https://ntfy.sh/${CLOUD_RELAY_TOPIC}`;
+
+// Bersihkan cache lama
 if (typeof window !== 'undefined') {
   localStorage.removeItem('smartqa_realtime_db_v1');
   localStorage.removeItem('smartqa_prod_db_v1');
+  localStorage.removeItem('smartqa_admin_session');
 }
 
 const DEFAULT_FIREBASE_CONFIG = {
@@ -48,10 +46,12 @@ const DEFAULT_FIREBASE_CONFIG = {
 
 let firebaseApp = null;
 let db = null;
-let auth = null;
 let isFirebaseConnected = false;
 let stateCache = null;
+let relayEventSource = null;
+let lastSyncTimestamp = 0;
 const listeners = new Set();
+const clientInstanceId = `cli_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 
 const broadcastChannel =
   typeof window !== 'undefined' && 'BroadcastChannel' in window
@@ -99,16 +99,7 @@ export function getActiveFirebaseConfig() {
     appId: import.meta.env.VITE_FIREBASE_APP_ID || DEFAULT_FIREBASE_CONFIG.appId
   };
 
-  if (
-    envConfig.apiKey &&
-    envConfig.databaseURL &&
-    !envConfig.apiKey.includes('YourApiKeyHere') &&
-    !envConfig.databaseURL.includes('smart-qa-project-default-rtdb')
-  ) {
-    return envConfig;
-  }
-
-  return DEFAULT_FIREBASE_CONFIG;
+  return envConfig;
 }
 
 export function saveRuntimeFirebaseConfig(configObj) {
@@ -130,16 +121,15 @@ export function getFirebaseConnectionInfo() {
   };
 }
 
-/**
- * Struktur database awal sepenuhnya kosong (0 sesi, 0 pertanyaan).
- * Admin akan membuat sesi kegiatan baru sesuai kebutuhan acara.
- */
 function createInitialDatabaseState() {
   return {
     activeSessionId: null,
     sessions: {},
+    deletedSessions: {},
     votes: {},
-    activities: []
+    accounts: {},
+    activities: [],
+    updatedAt: 0
   };
 }
 
@@ -152,8 +142,11 @@ function loadLocalDb() {
         return {
           activeSessionId: parsed.activeSessionId || null,
           sessions: parsed.sessions || {},
+          deletedSessions: parsed.deletedSessions || {},
           votes: parsed.votes || {},
-          activities: Array.isArray(parsed.activities) ? parsed.activities : []
+          accounts: parsed.accounts || {},
+          activities: Array.isArray(parsed.activities) ? parsed.activities : [],
+          updatedAt: parsed.updatedAt || 0
         };
       }
     }
@@ -166,10 +159,11 @@ function loadLocalDb() {
 }
 
 function saveLocalDb(newState) {
+  newState.updatedAt = Date.now();
   stateCache = newState;
   localStorage.setItem(STORAGE_KEY_DB, JSON.stringify(newState));
   if (broadcastChannel) {
-    broadcastChannel.postMessage({ type: 'SYNC_STATE', timestamp: Date.now() });
+    broadcastChannel.postMessage({ type: 'SYNC_STATE', timestamp: newState.updatedAt });
   }
   notifyListeners();
 }
@@ -186,28 +180,300 @@ function notifyListeners() {
 }
 
 /**
- * Hanya kirim perubahan ke Firebase apabila WebSocket benar-benar sedang online (isFirebaseConnected === true).
- * Ini mencegah SDK Firebase yang sedang offline menimpa state lokal dengan nilai parsial.
+ * Menggabungkan state dari perangkat lain (HP Peserta <-> Laptop Admin) secara pintar
+ * agar pertanyaan baru, sesi baru, vote, status undian, dan akun admin selalu sinkron.
  */
-function pushCloudWrite(fn) {
-  if (!db || !isFirebaseConnected) return;
-  try {
-    Promise.resolve(fn(db)).catch(() => {});
-  } catch {
-    // Ignore background sync error
+function mergeIncomingRemoteState(remote) {
+  if (!remote || typeof remote !== 'object') return false;
+  const current = stateCache || loadLocalDb();
+  let changed = false;
+
+  // 1. Merge deletedSessions
+  const deletedSessions = {
+    ...(current.deletedSessions || {}),
+    ...(remote.deletedSessions || {})
+  };
+
+  // 2. Merge Accounts (Admin registrations)
+  const mergedAccounts = { ...(current.accounts || {}) };
+  if (remote.accounts && typeof remote.accounts === 'object') {
+    Object.entries(remote.accounts).forEach(([emailKey, acc]) => {
+      if (!mergedAccounts[emailKey] || (acc.createdAt || 0) > (mergedAccounts[emailKey].createdAt || 0)) {
+        mergedAccounts[emailKey] = acc;
+        changed = true;
+      }
+    });
   }
+
+  // 3. Merge Sessions & Questions inside each session
+  const mergedSessions = { ...(current.sessions || {}) };
+  Object.keys(deletedSessions).forEach((delSid) => {
+    if (mergedSessions[delSid]) {
+      delete mergedSessions[delSid];
+      changed = true;
+    }
+  });
+
+  if (remote.sessions && typeof remote.sessions === 'object') {
+    Object.entries(remote.sessions).forEach(([sid, rSes]) => {
+      if (deletedSessions[sid] || !rSes) return;
+      const lSes = mergedSessions[sid];
+      if (!lSes) {
+        mergedSessions[sid] = {
+          ...rSes,
+          questions: rSes.questions || {},
+          drawHistory: rSes.drawHistory || {}
+        };
+        changed = true;
+      } else {
+        // Merge questions
+        const lQuestions = { ...(lSes.questions || {}) };
+        const rQuestions = rSes.questions || {};
+        const deletedQ = {
+          ...(lSes.deletedQuestions || {}),
+          ...(rSes.deletedQuestions || {})
+        };
+
+        Object.keys(deletedQ).forEach((dqId) => {
+          if (lQuestions[dqId]) {
+            delete lQuestions[dqId];
+            changed = true;
+          }
+        });
+
+        Object.entries(rQuestions).forEach(([qid, rq]) => {
+          if (deletedQ[qid] || !rq) return;
+          const lq = lQuestions[qid];
+          if (!lq || (rq.updatedAt || rq.createdAt || 0) >= (lq.updatedAt || lq.createdAt || 0)) {
+            if (JSON.stringify(lq) !== JSON.stringify(rq)) {
+              lQuestions[qid] = rq;
+              changed = true;
+            }
+          }
+        });
+
+        // Pastikan nomor urut pertanyaan tidak bertabrakan jika dikirim bersamaan dari banyak HP
+        const sortedByTime = Object.values(lQuestions).sort(
+          (a, b) => (a.createdAt || 0) - (b.createdAt || 0)
+        );
+        sortedByTime.forEach((qItem, idx) => {
+          const expectedNum = idx + 1;
+          if (qItem.number !== expectedNum) {
+            lQuestions[qItem.id] = { ...qItem, number: expectedNum };
+            changed = true;
+          }
+        });
+
+        // Merge drawState & drawHistory
+        const rDrawUpdated = rSes.drawState?.updatedAt || 0;
+        const lDrawUpdated = lSes.drawState?.updatedAt || 0;
+        const nextDrawState = rDrawUpdated >= lDrawUpdated ? rSes.drawState : lSes.drawState;
+
+        const nextHistory = {
+          ...(lSes.drawHistory || {}),
+          ...(rSes.drawHistory || {})
+        };
+
+        const rSesUpdated = rSes.updatedAt || rSes.createdAt || 0;
+        const lSesUpdated = lSes.updatedAt || lSes.createdAt || 0;
+        const baseSes = rSesUpdated >= lSesUpdated ? rSes : lSes;
+
+        const updatedSes = {
+          ...baseSes,
+          questions: lQuestions,
+          deletedQuestions: deletedQ,
+          drawState: nextDrawState,
+          drawHistory: nextHistory
+        };
+
+        if (JSON.stringify(mergedSessions[sid]) !== JSON.stringify(updatedSes)) {
+          mergedSessions[sid] = updatedSes;
+          changed = true;
+        }
+      }
+    });
+  }
+
+  // 4. Merge Votes
+  const mergedVotes = { ...(current.votes || {}) };
+  if (remote.votes && typeof remote.votes === 'object') {
+    Object.entries(remote.votes).forEach(([sid, qMap]) => {
+      if (!mergedVotes[sid]) mergedVotes[sid] = {};
+      Object.entries(qMap || {}).forEach(([qid, pMap]) => {
+        mergedVotes[sid][qid] = {
+          ...(mergedVotes[sid][qid] || {}),
+          ...(pMap || {})
+        };
+      });
+    });
+  }
+
+  // 5. Active Session ID
+  let nextActiveId = current.activeSessionId;
+  if ((remote.updatedAt || 0) >= (current.updatedAt || 0) && remote.activeSessionId !== undefined) {
+    nextActiveId = remote.activeSessionId;
+  }
+  if (!nextActiveId || !mergedSessions[nextActiveId]) {
+    const firstActive = Object.values(mergedSessions).find((s) => s.status === 'active');
+    nextActiveId = firstActive ? firstActive.id : Object.keys(mergedSessions)[0] || null;
+  }
+  if (nextActiveId !== current.activeSessionId) {
+    changed = true;
+  }
+
+  // 6. Merge Activities
+  const actMap = new Map();
+  [...(remote.activities || []), ...(current.activities || [])].forEach((a) => {
+    if (a && a.id) actMap.set(a.id, a);
+  });
+  const mergedActivities = Array.from(actMap.values())
+    .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
+    .slice(0, 35);
+
+  if (changed) {
+    const nextState = {
+      activeSessionId: nextActiveId,
+      sessions: mergedSessions,
+      deletedSessions,
+      votes: mergedVotes,
+      accounts: mergedAccounts,
+      activities: mergedActivities,
+      updatedAt: Math.max(current.updatedAt || 0, remote.updatedAt || 0)
+    };
+    stateCache = nextState;
+    localStorage.setItem(STORAGE_KEY_DB, JSON.stringify(nextState));
+    notifyListeners();
+  }
+  return changed;
+}
+
+/**
+ * Mengirimkan state terbaru ke Cloud Relay (ntfy.sh) dan Firebase Realtime Database
+ * agar HP Peserta dan Laptop Admin langsung tersinkronisasi lintas jaringan internet.
+ */
+function broadcastStateToCloud() {
+  const current = stateCache || loadLocalDb();
+
+  // 1. Kirim ke Cloud Relay lintas perangkat (HTTPS POST tanpa preflight)
+  if (typeof window !== 'undefined' && typeof fetch === 'function') {
+    const payload = JSON.stringify({
+      sender: clientInstanceId,
+      ts: Date.now(),
+      state: {
+        activeSessionId: current.activeSessionId,
+        sessions: current.sessions,
+        deletedSessions: current.deletedSessions,
+        votes: current.votes,
+        accounts: current.accounts,
+        activities: (current.activities || []).slice(0, 12),
+        updatedAt: current.updatedAt
+      }
+    });
+
+    fetch(CLOUD_RELAY_URL, {
+      method: 'POST',
+      body: payload
+    }).catch(() => {});
+  }
+
+  // 2. Kirim ke Firebase Realtime Database jika terhubung
+  if (db && isFirebaseConnected) {
+    try {
+      set(ref(db, '/'), current).catch(() => {});
+    } catch {
+      // Ignore Firebase error
+    }
+  }
+}
+
+/**
+ * Menghubungkan pendengar real-time (SSE + Riwayat 12 Jam) untuk sinkronisasi HP <-> Laptop
+ */
+function initCrossDeviceCloudRelay() {
+  if (typeof window === 'undefined') return;
+
+  // 1. Ambil riwayat state yang sudah dikirim dalam 12 jam terakhir
+  fetch(`${CLOUD_RELAY_URL}/json?poll=1&since=12h`)
+    .then((res) => res.text())
+    .then((text) => {
+      if (!text) return;
+      const lines = text.trim().split('\n');
+      lines.forEach((line) => {
+        try {
+          const envelope = JSON.parse(line);
+          if (envelope && envelope.event === 'message' && envelope.message) {
+            const parsed = JSON.parse(envelope.message);
+            if (parsed && parsed.state) {
+              mergeIncomingRemoteState(parsed.state);
+            }
+          }
+        } catch {
+          // Ignore malformed line
+        }
+      });
+    })
+    .catch(() => {});
+
+  // 2. Buka koneksi real-time Server-Sent Events (SSE)
+  if ('EventSource' in window && !relayEventSource) {
+    try {
+      relayEventSource = new EventSource(`${CLOUD_RELAY_URL}/sse`);
+      relayEventSource.onmessage = (event) => {
+        try {
+          const envelope = JSON.parse(event.data);
+          if (envelope && envelope.event === 'message' && envelope.message) {
+            const parsed = JSON.parse(envelope.message);
+            if (parsed && parsed.sender !== clientInstanceId && parsed.state) {
+              mergeIncomingRemoteState(parsed.state);
+            }
+          }
+        } catch {
+          // Ignore parse error
+        }
+      };
+    } catch {
+      // Fallback polling jika jaringan memblokir SSE
+    }
+  }
+
+  // 3. Fallback polling ringan setiap 4 detik agar 100% pasti masuk di semua jaringan seluler
+  setInterval(() => {
+    fetch(`${CLOUD_RELAY_URL}/json?poll=1&since=20s`)
+      .then((res) => res.text())
+      .then((text) => {
+        if (!text) return;
+        const lines = text.trim().split('\n');
+        lines.forEach((line) => {
+          try {
+            const envelope = JSON.parse(line);
+            if (envelope && envelope.event === 'message' && envelope.message) {
+              const parsed = JSON.parse(envelope.message);
+              if (parsed && parsed.sender !== clientInstanceId && parsed.state) {
+                mergeIncomingRemoteState(parsed.state);
+              }
+            }
+          } catch {
+            // Ignore
+          }
+        });
+      })
+      .catch(() => {});
+  }, 4000);
 }
 
 export function initDataService() {
   stateCache = loadLocalDb();
 
+  // Jalankan Cloud Relay lintas perangkat (HP <-> Laptop)
+  initCrossDeviceCloudRelay();
+
+  // Jalankan juga Firebase Realtime Database bila tersedia
   const config = getActiveFirebaseConfig();
   if (!config) return;
 
   try {
     firebaseApp = getApps().length === 0 ? initializeApp(config) : getApps()[0];
     db = getDatabase(firebaseApp);
-    auth = getAuth(firebaseApp);
 
     const connectedRef = ref(db, '.info/connected');
     onValue(connectedRef, (snap) => {
@@ -215,12 +481,8 @@ export function initDataService() {
       const wasDisconnected = !isFirebaseConnected && connectedNow;
       isFirebaseConnected = connectedNow;
 
-      // Saat baru terhubung ke Cloud dan ada sesi lokal, sinkronkan ke Cloud
       if (wasDisconnected && stateCache && Object.keys(stateCache.sessions || {}).length > 0) {
-        update(ref(db, '/'), {
-          activeSessionId: stateCache.activeSessionId || null,
-          sessions: stateCache.sessions
-        }).catch(() => {});
+        set(ref(db, '/'), stateCache).catch(() => {});
       }
       notifyListeners();
     });
@@ -232,26 +494,7 @@ export function initDataService() {
         if (!isFirebaseConnected) return;
         const val = snapshot.val();
         if (val && typeof val === 'object') {
-          const mergedSessions = {
-            ...(stateCache?.sessions || {}),
-            ...(val.sessions || {})
-          };
-          const syncedState = {
-            activeSessionId: val.activeSessionId || stateCache?.activeSessionId || null,
-            sessions: mergedSessions,
-            votes: {
-              ...(stateCache?.votes || {}),
-              ...(val.votes || {})
-            },
-            activities: val.activities
-              ? Array.isArray(val.activities)
-                ? val.activities
-                : Object.values(val.activities).sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
-              : stateCache?.activities || []
-          };
-          stateCache = syncedState;
-          localStorage.setItem(STORAGE_KEY_DB, JSON.stringify(syncedState));
-          notifyListeners();
+          mergeIncomingRemoteState(val);
         }
       },
       () => {
@@ -292,6 +535,7 @@ export function getAppState() {
     sessions: sessionsObj,
     sessionsList,
     votes: stateCache.votes || {},
+    accounts: stateCache.accounts || {},
     activities: Array.isArray(stateCache.activities)
       ? stateCache.activities
       : Object.values(stateCache.activities || {}).sort((a, b) => b.timestamp - a.timestamp)
@@ -314,11 +558,12 @@ export function getSessionById(sessionId) {
           id: sessionId,
           name: params.get('title') || `Sesi Q&A (${sessionId})`,
           speaker: params.get('speaker') || 'Pemateri',
-          description: 'Sesi tanya jawab interaktif peserta dan pemateri.',
+          description: '',
           status: 'active',
           allowQuestions: true,
           allowAnonymous: true,
           createdAt: Date.now(),
+          updatedAt: Date.now(),
           questions: {},
           drawState: {
             currentQuestionId: null,
@@ -395,15 +640,21 @@ function logActivity(type, message) {
   const list = Array.isArray(current.activities) ? current.activities : [];
   current.activities = [entry, ...list].slice(0, 35);
   saveLocalDb(current);
-
-  pushCloudWrite((database) =>
-    set(ref(database, `activities/${entry.id}`), entry)
-  );
+  broadcastStateToCloud();
 }
 
 /* ============================================================================
- * 1. AUTENTIKASI PEMATERI / ADMIN (INSTAN & NON-BLOCKING)
+ * 1. REGISTRASI & LOGIN ADMIN TERVERIFIKASI (SHA-256 HASH)
  * ========================================================================== */
+
+async function hashPassword(password) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(`smartqa_salt_v3_${password}`);
+  const hashBuffer = await window.crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(hashBuffer))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+}
 
 export function getCurrentAdmin() {
   try {
@@ -419,6 +670,65 @@ export function isAdminAuthenticated() {
   return Boolean(getCurrentAdmin());
 }
 
+export function hasRegisteredAdminAccounts() {
+  const state = getAppState();
+  return Object.keys(state.accounts || {}).length > 0;
+}
+
+export async function registerAdmin({ name, email, password, confirmPassword }) {
+  const cleanName = (name || '').trim();
+  const cleanEmail = (email || '').trim().toLowerCase();
+  const cleanPass = (password || '').trim();
+  const cleanConfirm = (confirmPassword || '').trim();
+
+  if (!cleanName) {
+    throw new Error('Nama lengkap wajib diisi.');
+  }
+  if (!cleanEmail || !cleanEmail.includes('@')) {
+    throw new Error('Masukkan alamat email yang valid.');
+  }
+  if (cleanPass.length < 6) {
+    throw new Error('Kata sandi minimal terdiri dari 6 karakter.');
+  }
+  if (cleanPass !== cleanConfirm) {
+    throw new Error('Konfirmasi kata sandi tidak cocok.');
+  }
+
+  const emailKey = cleanEmail.replace(/[^a-z0-9]/g, '_');
+  const current = loadLocalDb();
+  if (!current.accounts) current.accounts = {};
+
+  if (current.accounts[emailKey]) {
+    throw new Error('Email ini sudah terdaftar. Silakan masuk menggunakan kata sandi Anda.');
+  }
+
+  const passwordHash = await hashPassword(cleanPass);
+  const newAccount = {
+    uid: `adm_${Date.now()}`,
+    name: cleanName,
+    email: cleanEmail,
+    passwordHash,
+    role: 'admin',
+    createdAt: Date.now()
+  };
+
+  current.accounts[emailKey] = newAccount;
+  saveLocalDb(current);
+  broadcastStateToCloud();
+
+  const sessionAdmin = {
+    uid: newAccount.uid,
+    name: newAccount.name,
+    email: newAccount.email,
+    role: 'admin',
+    loginAt: Date.now()
+  };
+  localStorage.setItem(STORAGE_KEY_ADMIN, JSON.stringify(sessionAdmin));
+  logActivity('auth', `Admin "${cleanName}" telah mendaftar dan masuk.`);
+  notifyListeners();
+  return sessionAdmin;
+}
+
 export async function loginAdmin(email, password) {
   const cleanEmail = (email || '').trim().toLowerCase();
   const cleanPass = (password || '').trim();
@@ -427,36 +737,36 @@ export async function loginAdmin(email, password) {
     throw new Error('Email dan kata sandi wajib diisi.');
   }
 
-  if (cleanPass.length < 6) {
-    throw new Error('Kata sandi minimal terdiri dari 6 karakter.');
+  const emailKey = cleanEmail.replace(/[^a-z0-9]/g, '_');
+  const current = loadLocalDb();
+  const accounts = current.accounts || {};
+  const existingAccount = accounts[emailKey];
+
+  if (!existingAccount) {
+    throw new Error('Akun tidak ditemukan. Silakan registrasi akun admin terlebih dahulu.');
+  }
+
+  const enteredHash = await hashPassword(cleanPass);
+  if (existingAccount.passwordHash !== enteredHash) {
+    throw new Error('Kata sandi yang Anda masukkan salah.');
   }
 
   const adminData = {
-    uid: 'admin_01',
-    email: cleanEmail,
-    name: cleanEmail.split('@')[0].toUpperCase(),
+    uid: existingAccount.uid,
+    email: existingAccount.email,
+    name: existingAccount.name,
     role: 'admin',
     loginAt: Date.now()
   };
   localStorage.setItem(STORAGE_KEY_ADMIN, JSON.stringify(adminData));
-  logActivity('auth', `Pemateri/Admin (${cleanEmail}) membuka sesi Q&A.`);
+  logActivity('auth', `Admin ${existingAccount.name} masuk ke panel Q&A.`);
   notifyListeners();
-
-  if (auth && isFirebaseConnected) {
-    signInWithEmailAndPassword(auth, cleanEmail, cleanPass).catch(() => {
-      createUserWithEmailAndPassword(auth, cleanEmail, cleanPass).catch(() => {});
-    });
-  }
-
   return adminData;
 }
 
 export async function logoutAdmin() {
   localStorage.removeItem(STORAGE_KEY_ADMIN);
   notifyListeners();
-  if (auth && isFirebaseConnected) {
-    signOut(auth).catch(() => {});
-  }
 }
 
 /* ============================================================================
@@ -486,8 +796,8 @@ export async function submitQuestion(sessionId, { name, text, anonymous }) {
   if (!cleanText) {
     throw new Error('Isi pertanyaan tidak boleh kosong.');
   }
-  if (cleanText.length < 10) {
-    throw new Error('Pertanyaan terlalu singkat (minimal 10 karakter).');
+  if (cleanText.length < 3) {
+    throw new Error('Pertanyaan terlalu singkat.');
   }
   if (cleanText.length > 350) {
     throw new Error('Pertanyaan melebihi batas maksimal 350 karakter.');
@@ -499,13 +809,13 @@ export async function submitQuestion(sessionId, { name, text, anonymous }) {
   }
 
   const isAnon = Boolean(anonymous) && session.allowAnonymous !== false;
-  const cleanName = isAnon ? 'Peserta Anonim' : (name || '').trim() || 'Peserta Seminar';
+  const cleanName = isAnon ? 'Anonim' : (name || '').trim() || 'Peserta';
 
   const existingDuplicate = session.questionsList.find(
     (q) => q.text.toLowerCase() === cleanText.toLowerCase()
   );
   if (existingDuplicate) {
-    throw new Error('Pertanyaan yang sama persis sudah ada di daftar. Silakan berikan dukungan suara pada pertanyaan tersebut.');
+    throw new Error('Pertanyaan yang sama sudah ada di daftar.');
   }
 
   const nextNumber =
@@ -524,23 +834,25 @@ export async function submitQuestion(sessionId, { name, text, anonymous }) {
     votes: 0,
     status: 'pending',
     createdAt: now,
+    updatedAt: now,
     selectedAt: null
   };
 
   const current = loadLocalDb();
-  if (current.sessions[session.id]) {
-    if (!current.sessions[session.id].questions) {
-      current.sessions[session.id].questions = {};
-    }
-    current.sessions[session.id].questions[questionId] = newQuestion;
-    saveLocalDb(current);
+  if (!current.sessions[session.id]) {
+    current.sessions[session.id] = {
+      ...session,
+      questions: {}
+    };
   }
-
-  pushCloudWrite((database) =>
-    set(ref(database, `sessions/${session.id}/questions/${questionId}`), newQuestion)
-  );
-
+  if (!current.sessions[session.id].questions) {
+    current.sessions[session.id].questions = {};
+  }
+  current.sessions[session.id].questions[questionId] = newQuestion;
+  current.sessions[session.id].updatedAt = now;
+  saveLocalDb(current);
   localStorage.setItem(STORAGE_KEY_COOLDOWN, String(now));
+
   logActivity('question', `Pertanyaan #${String(nextNumber).padStart(2, '0')} dikirim oleh ${cleanName}.`);
   return newQuestion;
 }
@@ -579,22 +891,19 @@ export async function toggleVoteQuestion(sessionId, questionId) {
     delete current.votes[session.id][questionId][pid];
     nextVotes = Math.max(0, (Number(qTarget.votes) || 1) - 1);
     qTarget.votes = nextVotes;
+    qTarget.updatedAt = Date.now();
     votedResult = false;
   } else {
     current.votes[session.id][questionId][pid] = true;
     nextVotes = (Number(qTarget.votes) || 0) + 1;
     qTarget.votes = nextVotes;
+    qTarget.updatedAt = Date.now();
     votedResult = true;
   }
 
+  current.sessions[session.id].updatedAt = Date.now();
   saveLocalDb(current);
-
-  pushCloudWrite((database) =>
-    update(ref(database, '/'), {
-      [`votes/${session.id}/${questionId}/${pid}`]: votedResult ? true : null,
-      [`sessions/${session.id}/questions/${questionId}/votes`]: nextVotes
-    })
-  );
+  broadcastStateToCloud();
 
   return { voted: votedResult };
 }
@@ -619,6 +928,7 @@ export async function updateQuestionStatus(sessionId, questionId, newStatus, met
     Object.values(targetSession.questions).forEach((q) => {
       if (q.status === 'selected' && q.id !== questionId) {
         q.status = 'answered';
+        q.updatedAt = now;
       }
     });
     targetQ.selectedAt = now;
@@ -660,15 +970,15 @@ export async function updateQuestionStatus(sessionId, questionId, newStatus, met
   }
 
   targetQ.status = newStatus;
+  targetQ.updatedAt = now;
+  targetSession.updatedAt = now;
   saveLocalDb(current);
-
-  pushCloudWrite((database) => set(ref(database, `sessions/${session.id}`), targetSession));
 
   const statusLabels = {
     pending: 'Pending',
-    selected: 'Terpilih (Selected)',
-    answered: 'Terjawab (Answered)',
-    skipped: 'Dilewati (Skipped)'
+    selected: 'Terpilih',
+    answered: 'Terjawab',
+    skipped: 'Dilewati'
   };
   logActivity(
     'status',
@@ -682,18 +992,23 @@ export async function deleteQuestion(sessionId, questionId) {
   const question = session.questionsObj[questionId];
   if (!question) return;
 
+  const now = Date.now();
   const current = loadLocalDb();
   const targetSession = current.sessions[session.id];
-  if (targetSession?.questions?.[questionId]) {
-    delete targetSession.questions[questionId];
-  }
-  if (targetSession?.drawState?.currentQuestionId === questionId) {
-    targetSession.drawState.currentQuestionId = null;
-    targetSession.drawState.isDrawing = false;
+  if (targetSession) {
+    if (!targetSession.deletedQuestions) targetSession.deletedQuestions = {};
+    targetSession.deletedQuestions[questionId] = now;
+    if (targetSession.questions?.[questionId]) {
+      delete targetSession.questions[questionId];
+    }
+    if (targetSession.drawState?.currentQuestionId === questionId) {
+      targetSession.drawState.currentQuestionId = null;
+      targetSession.drawState.isDrawing = false;
+      targetSession.drawState.updatedAt = now;
+    }
+    targetSession.updatedAt = now;
   }
   saveLocalDb(current);
-
-  pushCloudWrite((database) => set(ref(database, `sessions/${session.id}`), targetSession));
 
   logActivity('delete', `Pertanyaan #${String(question.number).padStart(2, '0')} dihapus.`);
 }
@@ -730,11 +1045,9 @@ export async function lockAndSelectRandomQuestion(sessionId) {
     drawVersion: (ds.drawVersion || 0) + 1,
     updatedAt: now
   };
+  targetSession.updatedAt = now;
   saveLocalDb(current);
-
-  pushCloudWrite((database) =>
-    set(ref(database, `sessions/${session.id}/drawState`), targetSession.drawState)
-  );
+  broadcastStateToCloud();
 
   return {
     candidates: pendingQuestions,
@@ -757,6 +1070,7 @@ export async function resetSessionQuestionsToPending(sessionId) {
     Object.values(targetSession.questions).forEach((q) => {
       q.status = 'pending';
       q.selectedAt = null;
+      q.updatedAt = now;
     });
   }
   targetSession.drawState = {
@@ -766,9 +1080,8 @@ export async function resetSessionQuestionsToPending(sessionId) {
     updatedAt: now
   };
   targetSession.drawHistory = {};
+  targetSession.updatedAt = now;
   saveLocalDb(current);
-
-  pushCloudWrite((database) => set(ref(database, `sessions/${session.id}`), targetSession));
 
   logActivity('reset', `Antrean undian sesi "${session.name}" di-reset kembali ke Pending.`);
 }
@@ -791,17 +1104,22 @@ export async function createNewSession({ name, speaker, description, customCode,
   if (current.sessions[sessionId]) {
     throw new Error(`Kode sesi "${sessionId}" sudah digunakan. Gunakan kode lain.`);
   }
+  if (current.deletedSessions?.[sessionId]) {
+    delete current.deletedSessions[sessionId];
+  }
 
   const newSessionObj = {
     id: sessionId,
     name: cleanName,
     speaker: (speaker || '').trim() || 'Pemateri',
-    description: (description || '').trim() || 'Sesi tanya jawab interaktif peserta dan pemateri.',
+    description: (description || '').trim(),
     status: 'active',
     allowQuestions: true,
     allowAnonymous: Boolean(allowAnonymous),
     createdAt: now,
+    updatedAt: now,
     questions: {},
+    deletedQuestions: {},
     drawState: {
       currentQuestionId: null,
       isDrawing: false,
@@ -817,13 +1135,6 @@ export async function createNewSession({ name, speaker, description, customCode,
   }
   saveLocalDb(current);
 
-  pushCloudWrite((database) =>
-    update(ref(database, '/'), {
-      [`sessions/${sessionId}`]: newSessionObj,
-      activeSessionId: current.activeSessionId
-    })
-  );
-
   logActivity('session', `Sesi baru "${cleanName}" (${sessionId}) berhasil dibuat.`);
   return newSessionObj;
 }
@@ -834,14 +1145,8 @@ export async function setActiveSession(sessionId) {
 
   current.activeSessionId = sessionId;
   current.sessions[sessionId].status = 'active';
+  current.sessions[sessionId].updatedAt = Date.now();
   saveLocalDb(current);
-
-  pushCloudWrite((database) =>
-    update(ref(database, '/'), {
-      activeSessionId: sessionId,
-      [`sessions/${sessionId}/status`]: 'active'
-    })
-  );
 
   logActivity('session', `Sesi aktif dialihkan ke "${current.sessions[sessionId].name}".`);
 }
@@ -854,12 +1159,11 @@ export async function updateSessionConfig(sessionId, updates) {
   if (current.sessions[session.id]) {
     current.sessions[session.id] = {
       ...current.sessions[session.id],
-      ...updates
+      ...updates,
+      updatedAt: Date.now()
     };
     saveLocalDb(current);
   }
-
-  pushCloudWrite((database) => update(ref(database, `sessions/${session.id}`), updates));
 
   logActivity('session', `Pengaturan sesi "${session.name}" diperbarui.`);
 }
@@ -871,6 +1175,13 @@ export async function clearAllQuestionsInSession(sessionId) {
   const now = Date.now();
   const current = loadLocalDb();
   if (current.sessions[session.id]) {
+    const existingQIds = Object.keys(current.sessions[session.id].questions || {});
+    if (!current.sessions[session.id].deletedQuestions) {
+      current.sessions[session.id].deletedQuestions = {};
+    }
+    existingQIds.forEach((qid) => {
+      current.sessions[session.id].deletedQuestions[qid] = now;
+    });
     current.sessions[session.id].questions = {};
     current.sessions[session.id].drawHistory = {};
     current.sessions[session.id].drawState = {
@@ -879,31 +1190,22 @@ export async function clearAllQuestionsInSession(sessionId) {
       drawVersion: 0,
       updatedAt: now
     };
+    current.sessions[session.id].updatedAt = now;
   }
   if (current.votes && current.votes[session.id]) {
     current.votes[session.id] = {};
   }
   saveLocalDb(current);
 
-  pushCloudWrite((database) =>
-    update(ref(database, '/'), {
-      [`sessions/${session.id}/questions`]: null,
-      [`sessions/${session.id}/drawHistory`]: null,
-      [`votes/${session.id}`]: null,
-      [`sessions/${session.id}/drawState`]: {
-        currentQuestionId: null,
-        isDrawing: false,
-        drawVersion: 0,
-        updatedAt: now
-      }
-    })
-  );
-
   logActivity('reset', `Seluruh pertanyaan pada sesi "${session.name}" telah dikosongkan.`);
 }
 
 export async function deleteSessionById(sessionId) {
+  const now = Date.now();
   const current = loadLocalDb();
+  if (!current.deletedSessions) current.deletedSessions = {};
+  current.deletedSessions[sessionId] = now;
+
   if (current.sessions) {
     delete current.sessions[sessionId];
   }
@@ -912,13 +1214,6 @@ export async function deleteSessionById(sessionId) {
     current.activeSessionId = remaining[0] || null;
   }
   saveLocalDb(current);
-
-  pushCloudWrite((database) =>
-    update(ref(database, '/'), {
-      [`sessions/${sessionId}`]: null,
-      activeSessionId: current.activeSessionId
-    })
-  );
 
   logActivity('session', `Sesi ${sessionId} telah dihapus.`);
 }

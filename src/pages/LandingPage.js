@@ -1,9 +1,9 @@
 /**
- * SmartQ&A — 1. Landing Page (Apple iOS Liquid Glass & Bento Spatial UI)
+ * SmartQ&A — 1. Landing Page (Clean Liquid Glass & Live Audience Feed)
  */
 
 import { getAppState, getSessionById } from '../services/firebase.js';
-import { escapeHtml } from '../components/Navbar.js';
+import { escapeHtml, formatTimeAgo } from '../components/Navbar.js';
 import { Icons } from '../components/Icons.js';
 import { openQRCodeModal } from '../components/QRCodeModal.js';
 import { navigateTo, showToast } from '../app.js';
@@ -18,17 +18,14 @@ export function renderLandingPage() {
   const answeredCount = activeSession
     ? activeSession.questionsList.filter((q) => q.status === 'answered').length
     : 0;
-  const latestQuestion =
-    activeSession && activeSession.questionsList.length > 0
-      ? activeSession.questionsList[0]
-      : null;
+  const recentQuestions = activeSession ? activeSession.questionsList.slice(0, 6) : [];
 
   return `
     <div class="flex-1 flex flex-col">
-      <!-- Hero Section: Spatial Liquid Glass & Live Activity Widget -->
-      <section class="max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-12 lg:py-14">
+      <!-- Hero Section -->
+      <section class="max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-10 lg:py-14">
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
-          <!-- Left Column (7 Cols): Cupertino Typography & Capsule Controls -->
+          <!-- Left Column (7 Cols) -->
           <div class="lg:col-span-7 space-y-5">
             <div class="space-y-2.5">
               <p class="text-sm sm:text-base font-semibold tracking-tight text-[#2563EB]">
@@ -48,7 +45,7 @@ export function renderLandingPage() {
               SmartQ&amp;A helps you create interactive question sessions with random question selection, bringing a fresh experience to every discussion, presentation, and learning session.
             </p>
 
-            <!-- Tactile Capsule Buttons (Full-width & Balanced Grid on Mobile, Inline on Tablet/Desktop) -->
+            <!-- Action Buttons -->
             <div class="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2.5 sm:gap-3 pt-1">
               <a
                 href="${activeSession ? '#/admin/dashboard' : '#/admin/sessions'}"
@@ -76,7 +73,7 @@ export function renderLandingPage() {
               </div>
             </div>
 
-            <!-- iOS Spotlight-Style Session Code Capsule -->
+            <!-- Session Code Join Bar -->
             <div class="pt-2 sm:pt-3 max-w-md w-full">
               <form
                 id="landing-join-form"
@@ -101,23 +98,15 @@ export function renderLandingPage() {
             </div>
           </div>
 
-          <!-- Right Column (5 Cols): iOS Liquid Glass Live Activity Widget -->
+          <!-- Right Column (5 Cols): Live Session Summary -->
           <div class="lg:col-span-5">
             <div class="liquid-glass p-6 sm:p-7 relative overflow-hidden">
-              <!-- Top Status Header -->
               <div class="flex items-center justify-between gap-2 pb-4 border-b border-slate-200/70">
-                <div class="flex items-center gap-2">
-                  <span class="w-2.5 h-2.5 rounded-full ${
-                    activeSession && activeSession.status === 'active'
-                      ? 'bg-[#06B6D4] shadow-[0_0_10px_#06B6D4]'
-                      : 'bg-slate-400'
-                  }"></span>
-                  <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-                    Status Sesi Saat Ini
-                  </span>
-                </div>
-                <span class="font-mono text-xs font-semibold px-3 py-1 rounded-full bg-[#2563EB]/10 text-[#2563EB]">
-                  ${activeSession ? escapeHtml(activeSession.id) : 'BELUM ADA SESI'}
+                <span class="text-xs font-bold text-[#0F172A]">
+                  Sesi Tanya Jawab Saat Ini
+                </span>
+                <span class="text-xs font-semibold text-slate-500">
+                  ${activeSession ? `Kode: ${escapeHtml(activeSession.id)}` : 'Belum Ada Sesi'}
                 </span>
               </div>
 
@@ -130,14 +119,20 @@ export function renderLandingPage() {
                       ${escapeHtml(activeSession.name)}
                     </h2>
                     <p class="text-xs text-[#2563EB] font-semibold mt-1">
-                      ${escapeHtml(activeSession.speaker || 'Pemateri Utama')}
+                      Narasumber: ${escapeHtml(activeSession.speaker || 'Pemateri Utama')}
                     </p>
-                    <p class="text-xs text-slate-600 mt-2 leading-relaxed line-clamp-2">
-                      ${escapeHtml(activeSession.description || '')}
-                    </p>
+                    ${
+                      activeSession.description
+                        ? `
+                      <p class="text-xs text-slate-600 mt-1.5 leading-relaxed line-clamp-2">
+                        ${escapeHtml(activeSession.description)}
+                      </p>
+                    `
+                        : ''
+                    }
                   </div>
 
-                  <!-- iOS Widget Sub-Pills -->
+                  <!-- Stats Grid -->
                   <div class="grid grid-cols-3 gap-2.5">
                     <div class="liquid-cell p-3.5 text-center">
                       <span class="block font-mono text-2xl font-bold text-[#0F172A] tabular-nums">${totalQuestions}</span>
@@ -145,7 +140,7 @@ export function renderLandingPage() {
                     </div>
                     <div class="liquid-cell p-3.5 text-center">
                       <span class="block font-mono text-2xl font-bold text-[#2563EB] tabular-nums">${pendingCount}</span>
-                      <span class="text-[11px] text-slate-500 font-medium">Pending</span>
+                      <span class="text-[11px] text-slate-500 font-medium">Menunggu</span>
                     </div>
                     <div class="liquid-cell p-3.5 text-center">
                       <span class="block font-mono text-2xl font-bold text-emerald-600 tabular-nums">${answeredCount}</span>
@@ -153,20 +148,40 @@ export function renderLandingPage() {
                     </div>
                   </div>
 
+                  <!-- Live Recent Questions inside Hero Card -->
                   ${
-                    latestQuestion
+                    recentQuestions.length > 0
                       ? `
-                    <div class="liquid-cell p-3.5">
-                      <div class="flex items-center justify-between text-[11px] text-slate-500 mb-1">
-                        <span class="font-semibold text-[#2563EB]">Pertanyaan Terbaru (#${String(latestQuestion.number).padStart(2, '0')})</span>
-                        <span>${escapeHtml(latestQuestion.name)}</span>
+                    <div class="space-y-2">
+                      <div class="flex items-center justify-between text-xs">
+                        <span class="font-bold text-[#0F172A]">Pertanyaan Terbaru Peserta</span>
+                        <span class="text-slate-400">${totalQuestions} total</span>
                       </div>
-                      <p class="text-xs text-[#0F172A] line-clamp-2 leading-relaxed">
-                        "${escapeHtml(latestQuestion.text)}"
-                      </p>
+                      <div class="space-y-2 max-h-48 overflow-y-auto pr-1">
+                        ${recentQuestions
+                          .slice(0, 3)
+                          .map(
+                            (q) => `
+                          <div class="liquid-cell p-3">
+                            <div class="flex items-center justify-between text-[11px] text-slate-500 mb-1">
+                              <strong class="text-[#0F172A]">${String(q.number).padStart(2, '0')}. ${escapeHtml(q.name)}</strong>
+                              <span>${formatTimeAgo(q.createdAt)}</span>
+                            </div>
+                            <p class="text-xs text-slate-700 leading-relaxed line-clamp-2">
+                              ${escapeHtml(q.text)}
+                            </p>
+                          </div>
+                        `
+                          )
+                          .join('')}
+                      </div>
                     </div>
                   `
-                      : ''
+                      : `
+                    <div class="liquid-cell p-3.5 text-center">
+                      <p class="text-xs text-slate-500">Belum ada pertanyaan masuk. Pindai QR Code untuk mulai bertanya dari ponsel.</p>
+                    </div>
+                  `
                   }
 
                   <div class="flex flex-col sm:flex-row gap-2.5 pt-1">
@@ -200,7 +215,7 @@ export function renderLandingPage() {
                       Belum Ada Sesi Q&amp;A Aktif
                     </h2>
                     <p class="text-xs text-slate-500 leading-relaxed">
-                      Sistem masih kosong. Tekan tombol <strong>Mulai Q&amp;A</strong> untuk menambahkan sesi kegiatan baru beserta QR Code peserta.
+                      Tekan tombol <strong>Mulai Q&amp;A</strong> untuk menambahkan sesi kegiatan baru beserta QR Code peserta.
                     </p>
                   </div>
                   <div class="pt-1">
@@ -220,10 +235,66 @@ export function renderLandingPage() {
         </div>
       </section>
 
-      <!-- Section 2: Asymmetric Bento Liquid Glass Widgets -->
+      <!-- Live Incoming Questions Section on Home Page (When Active Session Exists) -->
+      ${
+        activeSession && recentQuestions.length > 0
+          ? `
+        <section class="max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div class="liquid-glass p-6 sm:p-8 space-y-5">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-200/70">
+              <div>
+                <h2 class="text-lg sm:text-xl font-bold text-[#0F172A] tracking-tight">
+                  Pertanyaan Masuk — ${escapeHtml(activeSession.name)} (${totalQuestions})
+                </h2>
+                <p class="text-xs text-slate-500 mt-0.5">
+                  Pertanyaan yang dikirim peserta dari HP tampil secara langsung di halaman ini.
+                </p>
+              </div>
+              <a
+                href="#/participant?session=${encodeURIComponent(activeSession.id)}"
+                class="ios-btn-primary px-4 py-2.5 text-xs font-semibold inline-flex items-center gap-1.5 self-start sm:self-auto"
+              >
+                <span>Kirim / Lihat Semua Pertanyaan</span>
+                ${Icons.arrowUpRight('w-3.5 h-3.5')}
+              </a>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              ${recentQuestions
+                .map(
+                  (q) => `
+                <article class="liquid-cell p-4 sm:p-5 flex flex-col justify-between gap-3">
+                  <div>
+                    <div class="flex items-center justify-between gap-2">
+                      <span class="text-xs font-bold text-[#0F172A]">
+                        ${String(q.number).padStart(2, '0')}. ${escapeHtml(q.name)}
+                      </span>
+                      <span class="text-[11px] text-slate-400">
+                        ${formatTimeAgo(q.createdAt)}
+                      </span>
+                    </div>
+                    <p class="mt-2 text-sm text-[#0F172A] leading-relaxed break-words">
+                      ${escapeHtml(q.text)}
+                    </p>
+                  </div>
+                  <div class="pt-2.5 border-t border-slate-200/60 flex items-center justify-between text-xs text-slate-500">
+                    <span>${q.status === 'answered' ? 'Selesai dijawab' : q.status === 'selected' ? 'Sedang dibahas' : 'Menunggu giliran'}</span>
+                    <span class="font-semibold text-[#2563EB]">${q.votes || 0} Dukungan</span>
+                  </div>
+                </article>
+              `
+                )
+                .join('')}
+            </div>
+          </div>
+        </section>
+      `
+          : ''
+      }
+
+      <!-- Section 2: Feature Highlights -->
       <section class="max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div class="grid grid-cols-1 md:grid-cols-12 gap-5">
-          <!-- Bento Widget 1 (7 Cols) -->
           <div class="md:col-span-7 liquid-glass p-6 sm:p-8 flex flex-col justify-between gap-4">
             <div class="flex items-start justify-between gap-4">
               <div>
@@ -231,7 +302,7 @@ export function renderLandingPage() {
                   Pengundian Pertanyaan Acak Siap Proyektor
                 </h3>
                 <p class="text-xs sm:text-sm text-slate-600 mt-2 leading-relaxed">
-                  Dirancang untuk ditampilkan di layar utama acara. Dilengkapi animasi perputaran pertanyaan yang halus, efek suara prosedural, serta penguncian transaksi database agar pertanyaan yang sudah terpilih tidak terundi kembali.
+                  Dirancang untuk ditampilkan di layar utama acara. Dilengkapi animasi perputaran pertanyaan yang halus, efek suara prosedural, serta penguncian antrean agar pertanyaan yang sudah terpilih tidak terundi kembali.
                 </p>
               </div>
               <span class="w-10 h-10 rounded-2xl bg-white/80 border border-white flex items-center justify-center text-[#2563EB] shadow-sm shrink-0">
@@ -240,15 +311,14 @@ export function renderLandingPage() {
             </div>
           </div>
 
-          <!-- Bento Widget 2 (5 Cols) -->
           <div class="md:col-span-5 liquid-glass p-6 sm:p-8 flex flex-col justify-between gap-4">
             <div class="flex items-start justify-between gap-4">
               <div>
                 <h3 class="text-xl font-bold text-[#0F172A] tracking-tight">
-                  Scan QR Tanpa Login
+                  Scan QR Tanpa Login Peserta
                 </h3>
                 <p class="text-xs sm:text-sm text-slate-600 mt-2 leading-relaxed">
-                  Peserta cukup memindai QR Code untuk bertanya atas nama pribadi maupun anonim, serta memberikan upvote secara real-time.
+                  Peserta cukup memindai QR Code dari HP untuk bertanya atas nama pribadi maupun anonim, serta memberikan dukungan suara secara real-time.
                 </p>
               </div>
               <span class="w-10 h-10 rounded-2xl bg-white/80 border border-white flex items-center justify-center text-[#0F172A] shadow-sm shrink-0">
@@ -259,7 +329,7 @@ export function renderLandingPage() {
         </div>
       </section>
 
-      <!-- Section 3: iOS Grouped Inset Session Directory -->
+      <!-- Section 3: Session Directory -->
       <section class="max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-14">
         <div class="liquid-glass p-6 sm:p-8">
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
@@ -298,28 +368,24 @@ export function renderLandingPage() {
                   return `
                     <div class="liquid-cell p-5 flex flex-col justify-between gap-4">
                       <div>
-                        <div class="flex items-center justify-between gap-2">
-                          <span class="font-mono text-xs font-semibold px-3 py-1 rounded-full bg-[#0F172A] text-[#06B6D4]">
-                            ${escapeHtml(ses.id)}
+                        <div class="flex items-center justify-between gap-2 text-xs text-slate-500">
+                          <span class="font-mono font-semibold text-[#2563EB]">
+                            Kode: ${escapeHtml(ses.id)}
                           </span>
-                          <span class="px-3 py-1 rounded-full text-[11px] font-semibold ${
-                            isAct
-                              ? 'bg-emerald-500/15 text-emerald-800 border border-emerald-500/20'
-                              : 'bg-slate-200/70 text-slate-600'
-                          }">
-                            ${isAct ? '● Sesi Aktif' : 'Selesai'}
+                          <span>
+                            ${isAct ? 'Sesi Aktif' : 'Selesai'}
                           </span>
                         </div>
-                        <h3 class="font-bold text-base text-[#0F172A] mt-3 leading-snug">
+                        <h3 class="font-bold text-base text-[#0F172A] mt-2 leading-snug">
                           ${escapeHtml(ses.name)}
                         </h3>
                         <p class="text-xs text-slate-500 mt-1">
-                          ${escapeHtml(ses.speaker || '-')}
+                          Narasumber: ${escapeHtml(ses.speaker || '-')}
                         </p>
                       </div>
 
                       <div class="pt-3 border-t border-slate-200/60 flex items-center justify-between">
-                        <span class="text-xs font-semibold text-slate-600 font-mono">${qCount} Pertanyaan</span>
+                        <span class="text-xs font-semibold text-slate-600">${qCount} Pertanyaan</span>
                         <a
                           href="#/participant?session=${encodeURIComponent(ses.id)}"
                           class="${
@@ -362,11 +428,6 @@ export function bindLandingPageEvents() {
       const code = (input?.value || '').trim().toUpperCase();
       if (!code) {
         showToast('Masukkan kode sesi terlebih dahulu.', 'error');
-        return;
-      }
-      const state = getAppState();
-      if (!state.sessions[code]) {
-        showToast(`Kode sesi "${code}" belum terdaftar.`, 'error');
         return;
       }
       navigateTo(`/participant?session=${encodeURIComponent(code)}`);

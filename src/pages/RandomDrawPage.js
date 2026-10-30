@@ -1,5 +1,5 @@
 /**
- * SmartQ&A — 5. Random Question Drawing Page (Unified Apple iOS Liquid Glass Projector Stage)
+ * SmartQ&A — 5. Random Question Drawing Page (Clean Projector Stage)
  */
 
 import {
@@ -49,31 +49,26 @@ export function renderRandomDrawPage() {
 
   return `
     <main class="max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-8 space-y-6 flex-1 flex flex-col justify-between">
-      <!-- Top Projector Capsule Bar -->
+      <!-- Top Projector Bar -->
       <section class="liquid-glass p-5 sm:p-6 flex flex-wrap items-center justify-between gap-4">
         <div class="flex items-center gap-3.5">
           <img src="./assets/logo.png" alt="SmartQ&A" class="w-10 h-10 object-contain drop-shadow-sm shrink-0" />
           <div>
-            <div class="flex items-center gap-2">
-              <h1 class="text-xl sm:text-2xl font-bold text-[#0F172A] tracking-tight">
-                ${escapeHtml(session.name)}
-              </h1>
-              <span class="font-mono text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#2563EB]/10 text-[#2563EB]">
-                ${escapeHtml(session.id)}
-              </span>
-            </div>
+            <h1 class="text-xl sm:text-2xl font-bold text-[#0F172A] tracking-tight">
+              ${escapeHtml(session.name)}
+            </h1>
             <p class="text-xs text-slate-500 mt-0.5">
-              ${escapeHtml(session.speaker || 'Sesi Tanya Jawab')}
+              ${escapeHtml(session.speaker || 'Sesi Tanya Jawab')} • Kode: <strong class="font-mono text-[#2563EB]">${escapeHtml(session.id)}</strong>
             </p>
           </div>
         </div>
 
-        <!-- Telemetry Capsule & Utility Pills -->
+        <!-- Telemetry & Controls -->
         <div class="flex flex-wrap items-center gap-2">
           <div class="flex items-center gap-3 px-4 py-2 rounded-full bg-white/80 border border-white shadow-sm">
             <div class="text-center px-1">
               <span class="block font-mono text-base font-bold text-[#2563EB] tabular-nums" id="draw-stat-pending">${pendingList.length}</span>
-              <span class="block text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Pending</span>
+              <span class="block text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Menunggu</span>
             </div>
             <div class="h-5 w-px bg-slate-200"></div>
             <div class="text-center px-1">
@@ -90,13 +85,9 @@ export function renderRandomDrawPage() {
           <button
             type="button"
             id="draw-btn-sound"
-            class="px-3.5 py-2.5 rounded-full border text-xs font-semibold transition inline-flex items-center gap-1.5 ${
-              soundOn
-                ? 'bg-[#2563EB]/12 border-[#2563EB]/30 text-[#2563EB]'
-                : 'ios-btn-glass text-slate-500'
-            }"
+            class="ios-btn-glass px-3.5 py-2.5 text-xs font-semibold inline-flex items-center gap-1.5"
           >
-            ${soundOn ? Icons.volumeOn('w-3.5 h-3.5') : Icons.volumeOff('w-3.5 h-3.5')}
+            ${soundOn ? Icons.volumeOn('w-3.5 h-3.5 text-[#2563EB]') : Icons.volumeOff('w-3.5 h-3.5 text-slate-400')}
             <span>${soundOn ? 'Audio: ON' : 'Audio: OFF'}</span>
           </button>
 
@@ -121,7 +112,7 @@ export function renderRandomDrawPage() {
           <button
             type="button"
             id="draw-btn-reset"
-            class="px-3.5 py-2.5 rounded-full bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-xs font-semibold text-red-600 transition inline-flex items-center gap-1.5"
+            class="ios-btn-glass px-3.5 py-2.5 text-xs font-semibold text-red-600 inline-flex items-center gap-1.5"
           >
             ${Icons.reset('w-3.5 h-3.5')}
             <span>Reset</span>
@@ -129,7 +120,7 @@ export function renderRandomDrawPage() {
         </div>
       </section>
 
-      <!-- CENTER LIQUID GLASS STAGE MONITOR -->
+      <!-- CENTER STAGE MONITOR -->
       <section class="w-full my-auto flex-1 flex flex-col justify-center">
         <div
           id="draw-stage-card"
@@ -153,7 +144,7 @@ export function renderRandomDrawPage() {
             </span>
           </div>
 
-          <!-- Progress Pill Bar -->
+          <!-- Progress Bar -->
           <div id="draw-progress-wrapper" class="hidden w-full h-1.5 bg-slate-200/80 rounded-full overflow-hidden mb-6">
             <div
               id="draw-progress-bar"
@@ -167,14 +158,10 @@ export function renderRandomDrawPage() {
             ${
               selectedQ
                 ? `
-              <div class="space-y-7">
-                <div class="flex flex-wrap items-center justify-between gap-3">
-                  <span class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider bg-[#2563EB] text-white shadow-sm">
-                    Pertanyaan Terpilih • #${String(selectedQ.number).padStart(2, '0')}
-                  </span>
-                  <span class="font-mono text-xs font-semibold px-3.5 py-1.5 rounded-full bg-[#2563EB]/10 text-[#2563EB] tabular-nums">
-                    ▲ ${selectedQ.votes || 0} Dukungan Audiens
-                  </span>
+              <div class="space-y-6">
+                <div class="flex flex-wrap items-center justify-between gap-3 text-xs font-semibold text-[#2563EB]">
+                  <span>Pertanyaan Terpilih • #${String(selectedQ.number).padStart(2, '0')}</span>
+                  <span>${selectedQ.votes || 0} Dukungan Audiens</span>
                 </div>
 
                 <blockquote class="text-2xl sm:text-4xl lg:text-[42px] font-bold text-[#0F172A] leading-[1.2] tracking-tight">
@@ -182,17 +169,12 @@ export function renderRandomDrawPage() {
                 </blockquote>
 
                 <div class="pt-5 border-t border-slate-200/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-full bg-gradient-to-b from-[#3B82F6] to-[#2563EB] text-white font-bold flex items-center justify-center text-sm shadow-sm">
-                      ${escapeHtml((selectedQ.name || 'P')[0].toUpperCase())}
-                    </div>
-                    <div>
-                      <span class="block text-xs text-slate-500">Dikirim oleh Peserta</span>
-                      <strong class="text-base sm:text-lg font-bold text-[#2563EB]">${escapeHtml(selectedQ.name)}</strong>
-                    </div>
+                  <div>
+                    <span class="block text-xs text-slate-500">Dikirim oleh Peserta</span>
+                    <strong class="text-base sm:text-lg font-bold text-[#0F172A]">${escapeHtml(selectedQ.name)}</strong>
                   </div>
-                  <span class="font-mono text-xs text-emerald-600 font-semibold uppercase">
-                    ● SEDANG DIBAHAS
+                  <span class="text-xs text-emerald-600 font-semibold">
+                    Sedang Dibahas
                   </span>
                 </div>
               </div>
@@ -202,7 +184,7 @@ export function renderRandomDrawPage() {
               <div class="text-center py-8 space-y-3 max-w-xl mx-auto">
                 <img src="./assets/logo.png" alt="SmartQ&A" class="w-14 h-14 object-contain mx-auto drop-shadow-sm" />
                 <h2 class="text-2xl sm:text-3xl font-bold text-[#0F172A] tracking-tight">
-                  Belum ada pertanyaan Pending di antrean undian.
+                  Belum ada pertanyaan menunggu di antrean undian.
                 </h2>
                 <p class="text-sm text-slate-500 leading-relaxed">
                   Peserta dapat mengirim pertanyaan baru melalui QR Code atau Anda dapat menekan tombol <strong>Reset</strong> di kanan atas untuk mengulang antrean undian.
@@ -211,7 +193,7 @@ export function renderRandomDrawPage() {
             `
                 : `
               <div class="text-center py-8 space-y-4 max-w-2xl mx-auto">
-                <div class="w-16 h-16 rounded-[22px] bg-[#2563EB]/10 border border-white flex items-center justify-center text-[#2563EB] mx-auto shadow-sm">
+                <div class="w-16 h-16 rounded-[22px] bg-white/80 border border-white flex items-center justify-center text-[#2563EB] mx-auto shadow-sm">
                   ${Icons.shuffle('w-7 h-7')}
                 </div>
                 <h2 class="text-2xl sm:text-4xl font-bold text-[#0F172A] leading-tight tracking-tight">
@@ -226,7 +208,7 @@ export function renderRandomDrawPage() {
           </div>
         </div>
 
-        <!-- CAPSULE TRANSPORT CONTROLS (Full-Width on Mobile, Inline on Tablet/Desktop) -->
+        <!-- TRANSPORT CONTROLS -->
         <div class="mt-6 flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center justify-center gap-3">
           ${
             !selectedQ
@@ -277,7 +259,7 @@ export function renderRandomDrawPage() {
         </div>
       </section>
 
-      <!-- BOTTOM DRAW HISTORY CAPSULES -->
+      <!-- BOTTOM DRAW HISTORY -->
       <section class="liquid-glass p-6">
         <div class="flex items-center justify-between mb-3">
           <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500">
@@ -299,14 +281,11 @@ export function renderRandomDrawPage() {
               .map(
                 (h) => `
               <div class="liquid-cell p-4 flex flex-col justify-between gap-2">
-                <div class="flex items-center justify-between gap-2">
-                  <span class="font-mono text-xs font-bold text-[#2563EB]">#${String(h.number).padStart(2, '0')} • ${escapeHtml(h.name)}</span>
-                  <span class="text-[10px] px-2 py-0.5 rounded-full bg-[#2563EB]/10 text-[#2563EB] uppercase font-semibold">
-                    ${escapeHtml(h.finalStatus || 'selected')}
-                  </span>
+                <div class="flex items-center justify-between gap-2 text-xs">
+                  <span class="font-bold text-[#0F172A]">${String(h.number).padStart(2, '0')}. ${escapeHtml(h.name)}</span>
+                  <span class="text-slate-400">${formatTimeAgo(h.selectedAt)}</span>
                 </div>
                 <p class="text-xs text-slate-700 line-clamp-2 leading-relaxed">"${escapeHtml(h.text)}"</p>
-                <span class="text-[10px] text-slate-400 font-mono">${formatTimeAgo(h.selectedAt)}</span>
               </div>
             `
               )
@@ -365,13 +344,13 @@ async function triggerRandomDrawProcess(sessionId) {
         if (stageContent && currentCandidate) {
           stageContent.innerHTML = `
             <div class="space-y-4 text-center">
-              <span class="inline-block px-3.5 py-1 rounded-full text-xs font-mono font-bold bg-[#2563EB]/12 text-[#2563EB]">
+              <span class="block text-xs font-bold text-[#2563EB]">
                 Mengundi Kandidat #${String(currentCandidate.number).padStart(2, '0')}
               </span>
               <p class="text-2xl sm:text-4xl font-bold text-[#0F172A] leading-snug">
                 "${escapeHtml(currentCandidate.text)}"
               </p>
-              <p class="text-sm font-semibold text-[#2563EB]">
+              <p class="text-sm font-semibold text-slate-600">
                 Pengirim: ${escapeHtml(currentCandidate.name)}
               </p>
             </div>
@@ -485,7 +464,7 @@ function openResetConfirmModal(sessionId, sessionName) {
         Reset Antrean Undian?
       </h3>
       <p class="text-xs text-slate-600 mt-2 leading-relaxed">
-        Seluruh pertanyaan pada sesi <strong>"${escapeHtml(sessionName)}"</strong> akan dikembalikan ke status <strong>Pending</strong> agar dapat diundi kembali dari awal.
+        Seluruh pertanyaan pada sesi <strong>"${escapeHtml(sessionName)}"</strong> akan dikembalikan ke status <strong>Menunggu</strong> agar dapat diundi kembali dari awal.
       </p>
       <div class="mt-6 flex items-center justify-center gap-2.5">
         <button
@@ -513,7 +492,7 @@ function openResetConfirmModal(sessionId, sessionName) {
     modal.remove();
     try {
       await resetSessionQuestionsToPending(sessionId);
-      showToast('Seluruh pertanyaan dikembalikan ke status Pending.', 'success');
+      showToast('Seluruh pertanyaan dikembalikan ke antrean undian.', 'success');
     } catch (err) {
       showToast(err.message || 'Gagal mereset sesi.', 'error');
     }

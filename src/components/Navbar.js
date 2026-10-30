@@ -1,15 +1,14 @@
 /**
- * SmartQ&A — Apple iOS Liquid Glass Floating Navigation Bar (Responsive Mobile, Tablet & Desktop)
+ * SmartQ&A — Clean Floating Navigation Bar (Responsive Mobile, Tablet & Desktop)
  */
 
-import { getCurrentAdmin, getFirebaseConnectionInfo, getSessionById, logoutAdmin } from '../services/firebase.js';
+import { getCurrentAdmin, getSessionById, logoutAdmin } from '../services/firebase.js';
 import { openQRCodeModal, openFirebaseConfigModal } from './QRCodeModal.js';
 import { Icons } from './Icons.js';
 import { navigateTo, showToast } from '../app.js';
 
 export function renderNavbar(currentPath) {
   const admin = getCurrentAdmin();
-  const fbInfo = getFirebaseConnectionInfo();
   const activeSession = getSessionById();
   const isAdminRoute = currentPath.startsWith('/admin') && currentPath !== '/admin/login';
 
@@ -23,10 +22,10 @@ export function renderNavbar(currentPath) {
   return `
     <header class="sticky top-2 sm:top-3 z-40 px-2.5 sm:px-6 pt-1 pb-2 pointer-events-none safe-top">
       <div class="max-w-5xl mx-auto flex flex-col items-center gap-2">
-        <!-- Main iOS Liquid Glass Capsule -->
-        <div class="liquid-glass rounded-full pointer-events-auto w-full px-3 sm:px-5 py-2 sm:py-2.5 flex items-center justify-between gap-1.5 sm:gap-2 text-[#0F172A]">
-          <!-- Left: Custom Logo & Live Session Activity Pill -->
-          <div class="flex items-center gap-2 min-w-0">
+        <!-- Main Navigation Bar -->
+        <div class="liquid-glass rounded-full pointer-events-auto w-full px-3.5 sm:px-5 py-2 sm:py-2.5 flex items-center justify-between gap-2 text-[#0F172A]">
+          <!-- Left: Brand Logo -->
+          <div class="flex items-center gap-2.5 min-w-0">
             <a
               href="#/"
               class="flex items-center gap-2 pr-1 sm:pr-2 py-0.5 rounded-full hover:opacity-90 transition shrink-0 focus:outline-none"
@@ -40,35 +39,10 @@ export function renderNavbar(currentPath) {
                 Smart<span class="text-[#2563EB]">Q&amp;A</span>
               </span>
             </a>
-
-            ${
-              activeSession
-                ? `
-              <div class="hidden lg:flex items-center gap-2 px-3 py-1 rounded-full bg-white/75 border border-white shadow-sm min-w-0">
-                <span class="w-2 h-2 rounded-full shrink-0 ${
-                  activeSession.status === 'active'
-                    ? 'bg-[#06B6D4] shadow-[0_0_8px_#06B6D4]'
-                    : 'bg-slate-400'
-                }"></span>
-                <span class="text-xs text-slate-700 truncate max-w-[180px] font-medium" title="${escapeHtml(activeSession.name)}">
-                  ${escapeHtml(activeSession.name)}
-                </span>
-                <span class="font-mono text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#2563EB]/10 text-[#2563EB]">
-                  ${escapeHtml(activeSession.id)}
-                </span>
-              </div>
-            `
-                : `
-              <div class="hidden lg:flex items-center gap-2 px-3 py-1 rounded-full bg-white/60 border border-white/80">
-                <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
-                <span class="text-[11px] text-slate-500 font-medium">Belum ada sesi aktif</span>
-              </div>
-            `
-            }
           </div>
 
-          <!-- Right: Liquid Capsule Controls -->
-          <div class="flex items-center gap-1 sm:gap-2 shrink-0">
+          <!-- Right: Navigation Controls -->
+          <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
             ${
               activeSession
                 ? `
@@ -76,7 +50,7 @@ export function renderNavbar(currentPath) {
                 type="button"
                 id="nav-btn-qr"
                 title="Tampilkan QR Code Sesi"
-                class="inline-flex items-center justify-center gap-1.5 p-2 sm:px-3 sm:py-1.5 rounded-full bg-white/75 hover:bg-white text-[#0F172A] border border-white text-xs font-semibold transition shadow-sm"
+                class="inline-flex items-center justify-center gap-1.5 p-2 sm:px-3.5 sm:py-1.5 rounded-full bg-white/80 hover:bg-white text-[#0F172A] border border-white text-xs font-semibold transition shadow-sm"
               >
                 ${Icons.qr('w-3.5 h-3.5 text-[#2563EB] shrink-0')}
                 <span class="hidden sm:inline">QR</span>
@@ -87,9 +61,9 @@ export function renderNavbar(currentPath) {
 
             <a
               href="#/participant"
-              class="px-2.5 sm:px-3.5 py-1.5 rounded-full text-xs font-semibold transition whitespace-nowrap ${
+              class="px-3 sm:px-3.5 py-1.5 rounded-full text-xs font-semibold transition whitespace-nowrap ${
                 currentPath === '/participant'
-                  ? 'bg-[#2563EB]/12 text-[#2563EB] border border-[#2563EB]/20'
+                  ? 'bg-white text-[#2563EB] shadow-sm'
                   : 'text-slate-600 hover:text-[#0F172A] hover:bg-white/70'
               }"
             >
@@ -100,18 +74,18 @@ export function renderNavbar(currentPath) {
             ${
               admin
                 ? `
-              <div class="flex items-center gap-1">
+              <div class="flex items-center gap-1.5">
                 <a
                   href="#${activeSession ? '/admin/dashboard' : '/admin/sessions'}"
-                  class="ios-btn-primary px-3 sm:px-4 py-1.5 text-xs font-semibold transition whitespace-nowrap"
+                  class="ios-btn-primary px-3.5 sm:px-4 py-1.5 text-xs font-semibold transition whitespace-nowrap"
                 >
                   ${activeSession ? 'Panel Q&A' : 'Mulai Q&A'}
                 </a>
                 <button
                   type="button"
                   id="nav-btn-logout"
-                  title="Keluar dari sesi Pemateri"
-                  class="px-2 sm:px-2.5 py-1.5 rounded-full text-[11px] sm:text-xs font-medium text-slate-500 hover:text-red-600 hover:bg-red-500/10 transition"
+                  title="Keluar dari akun Admin"
+                  class="px-2.5 py-1.5 rounded-full text-[11px] sm:text-xs font-medium text-slate-500 hover:text-red-600 transition"
                 >
                   Keluar
                 </button>
@@ -120,7 +94,7 @@ export function renderNavbar(currentPath) {
                 : `
               <a
                 href="#/admin/login"
-                class="ios-btn-primary px-3 sm:px-4 py-1.5 text-xs font-semibold inline-flex items-center gap-1 whitespace-nowrap"
+                class="ios-btn-primary px-3.5 sm:px-4 py-1.5 text-xs font-semibold inline-flex items-center gap-1 whitespace-nowrap"
               >
                 <span>Mulai Q&amp;A</span>
                 ${Icons.arrowRight('w-3 h-3 hidden xs:inline')}
@@ -130,7 +104,7 @@ export function renderNavbar(currentPath) {
           </div>
         </div>
 
-        <!-- Secondary Floating Segmented Control Pill (Admin Views - Scrollable on Mobile, Centered on Tablet/Desktop) -->
+        <!-- Secondary Admin Navigation Bar -->
         ${
           isAdminRoute
             ? `

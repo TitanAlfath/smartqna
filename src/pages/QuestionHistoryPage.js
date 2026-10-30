@@ -1,5 +1,5 @@
 /**
- * SmartQ&A — 6. Question History Page (iOS Liquid Glass Archive & CSV Export)
+ * SmartQ&A — 6. Question History Page (Clean Archive & CSV Export)
  */
 
 import { getAppState, getSessionById } from '../services/firebase.js';
@@ -39,35 +39,47 @@ export function renderQuestionHistoryPage() {
   );
   const displayRows = historyItems.length > 0 ? historyItems : answeredOrSelectedQuestions;
 
+  const statusText = (st) => {
+    if (st === 'answered') return 'Terjawab';
+    if (st === 'skipped') return 'Dilewati';
+    return 'Terpilih';
+  };
+
   return `
     <main class="max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-8 space-y-6">
-      <!-- Liquid Glass Header -->
+      <!-- Header -->
       <section class="liquid-glass p-6 sm:p-7 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div class="space-y-1">
           <h1 class="text-xl sm:text-2xl font-bold text-[#0F172A] tracking-tight">
             Riwayat Pertanyaan Terpilih
           </h1>
           <p class="text-xs text-slate-500">
-            Daftar pertanyaan yang telah diundi maupun dipilih secara manual selama sesi kegiatan.
+            Daftar pertanyaan yang telah diundi maupun dipilih selama sesi kegiatan.
           </p>
         </div>
 
         <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full md:w-auto">
-          <label for="history-session-select" class="sr-only">Pilih Sesi</label>
-          <select
-            id="history-session-select"
-            class="ios-btn-glass px-4 py-2.5 text-xs font-semibold text-[#0F172A] focus:outline-none cursor-pointer w-full sm:w-auto max-w-full truncate"
-          >
-            ${state.sessionsList
-              .map(
-                (s) => `
-              <option value="${escapeHtml(s.id)}" ${s.id === session.id ? 'selected' : ''}>
-                Sesi: ${escapeHtml(s.name)} (${escapeHtml(s.id)})
-              </option>
-            `
-              )
-              .join('')}
-          </select>
+          ${
+            state.sessionsList.length > 1
+              ? `
+            <label for="history-session-select" class="sr-only">Pilih Sesi</label>
+            <select
+              id="history-session-select"
+              class="ios-btn-glass px-4 py-2.5 text-xs font-semibold text-[#0F172A] focus:outline-none cursor-pointer w-full sm:w-auto max-w-full truncate"
+            >
+              ${state.sessionsList
+                .map(
+                  (s) => `
+                <option value="${escapeHtml(s.id)}" ${s.id === session.id ? 'selected' : ''}>
+                  Sesi: ${escapeHtml(s.name)} (${escapeHtml(s.id)})
+                </option>
+              `
+                )
+                .join('')}
+            </select>
+          `
+              : ''
+          }
 
           <button
             type="button"
@@ -80,14 +92,14 @@ export function renderQuestionHistoryPage() {
         </div>
       </section>
 
-      <!-- Liquid Glass Table & Mobile Card Sheet -->
+      <!-- Table & Mobile Card Sheet -->
       <section class="liquid-glass p-5 sm:p-7">
         <div class="flex items-center justify-between gap-2 pb-4 border-b border-slate-200/70 mb-4">
           <h2 class="text-sm font-bold text-[#0F172A] tracking-tight truncate">
-            Log Sesi: ${escapeHtml(session.name)} (${displayRows.length})
+            Sesi: ${escapeHtml(session.name)} (${displayRows.length} Riwayat)
           </h2>
-          <span class="font-mono text-xs px-3 py-0.5 rounded-full bg-[#2563EB]/10 text-[#2563EB] font-semibold shrink-0">
-            ${escapeHtml(session.id)}
+          <span class="text-xs font-mono font-semibold text-[#2563EB] shrink-0">
+            Kode: ${escapeHtml(session.id)}
           </span>
         </div>
 
@@ -106,34 +118,23 @@ export function renderQuestionHistoryPage() {
               .map((item) => {
                 const statusVal = item.finalStatus || item.status || 'selected';
                 return `
-                  <article class="liquid-cell p-4 space-y-2.5">
-                    <div class="flex items-center justify-between gap-2">
-                      <div class="flex items-center gap-2 min-w-0">
-                        <span class="font-mono text-xs font-bold px-2.5 py-0.5 rounded-full bg-[#2563EB]/10 text-[#2563EB] shrink-0">
-                          #${String(item.number).padStart(2, '0')}
-                        </span>
-                        <span class="text-xs font-bold text-[#0F172A] truncate">
-                          ${escapeHtml(item.name)}
-                        </span>
-                      </div>
-                      <span class="px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase shrink-0 ${
-                        statusVal === 'answered'
-                          ? 'bg-emerald-500/15 text-emerald-800'
-                          : statusVal === 'skipped'
-                          ? 'bg-slate-200/80 text-slate-600'
-                          : 'bg-[#2563EB] text-white'
-                      }">
-                        ${escapeHtml(statusVal)}
+                  <article class="liquid-cell p-4 space-y-2">
+                    <div class="flex items-center justify-between gap-2 text-xs">
+                      <span class="font-bold text-[#0F172A] truncate">
+                        ${String(item.number).padStart(2, '0')}. ${escapeHtml(item.name)}
+                      </span>
+                      <span class="font-semibold text-slate-600 shrink-0">
+                        ${statusText(statusVal)}
                       </span>
                     </div>
                     <p class="text-xs sm:text-sm text-slate-700 leading-relaxed break-words">
                       ${escapeHtml(item.text)}
                     </p>
                     <div class="pt-2 border-t border-slate-200/60 flex items-center justify-between text-[11px] text-slate-500">
-                      <span class="font-semibold text-[#2563EB]">
-                        ${item.method === 'manual' ? 'Manual' : 'Random Draw'} • ▲ ${item.votes || 0}
+                      <span>
+                        ${item.method === 'manual' ? 'Pilihan Manual' : 'Undian Acak'} • ${item.votes || 0} Dukungan
                       </span>
-                      <span class="font-mono">${formatTimeAgo(item.selectedAt || item.createdAt)}</span>
+                      <span>${formatTimeAgo(item.selectedAt || item.createdAt)}</span>
                     </div>
                   </article>
                 `;
@@ -150,7 +151,7 @@ export function renderQuestionHistoryPage() {
                   <th class="py-3 px-4">Pengirim</th>
                   <th class="py-3 px-4">Pertanyaan</th>
                   <th class="py-3 px-4">Metode</th>
-                  <th class="py-3 px-4">Suara</th>
+                  <th class="py-3 px-4">Dukungan</th>
                   <th class="py-3 px-4">Status Akhir</th>
                   <th class="py-3 px-4">Waktu</th>
                 </tr>
@@ -161,8 +162,8 @@ export function renderQuestionHistoryPage() {
                     const statusVal = item.finalStatus || item.status || 'selected';
                     return `
                       <tr class="hover:bg-white/60 transition">
-                        <td class="py-3.5 px-4 font-mono font-bold text-[#2563EB] tabular-nums">
-                          #${String(item.number).padStart(2, '0')}
+                        <td class="py-3.5 px-4 font-mono font-bold text-[#0F172A] tabular-nums">
+                          ${String(item.number).padStart(2, '0')}
                         </td>
                         <td class="py-3.5 px-4 font-bold text-[#0F172A] whitespace-nowrap">
                           ${escapeHtml(item.name)}
@@ -170,30 +171,16 @@ export function renderQuestionHistoryPage() {
                         <td class="py-3.5 px-4 text-slate-700 max-w-md leading-relaxed">
                           ${escapeHtml(item.text)}
                         </td>
-                        <td class="py-3.5 px-4 whitespace-nowrap">
-                          <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${
-                            item.method === 'manual'
-                              ? 'bg-slate-200/80 text-slate-700'
-                              : 'bg-[#2563EB]/10 text-[#2563EB]'
-                          }">
-                            ${item.method === 'manual' ? 'Manual' : 'Random Draw'}
-                          </span>
+                        <td class="py-3.5 px-4 whitespace-nowrap text-slate-600 font-medium">
+                          ${item.method === 'manual' ? 'Manual' : 'Undian Acak'}
                         </td>
                         <td class="py-3.5 px-4 font-mono font-semibold text-slate-700 tabular-nums">
-                          ▲ ${item.votes || 0}
+                          ${item.votes || 0}
                         </td>
-                        <td class="py-3.5 px-4 whitespace-nowrap">
-                          <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold uppercase ${
-                            statusVal === 'answered'
-                              ? 'bg-emerald-500/15 text-emerald-800'
-                              : statusVal === 'skipped'
-                              ? 'bg-slate-200/80 text-slate-600'
-                              : 'bg-[#2563EB] text-white'
-                          }">
-                            ${escapeHtml(statusVal)}
-                          </span>
+                        <td class="py-3.5 px-4 whitespace-nowrap font-semibold text-[#0F172A]">
+                          ${statusText(statusVal)}
                         </td>
-                        <td class="py-3.5 px-4 text-xs text-slate-500 font-mono whitespace-nowrap">
+                        <td class="py-3.5 px-4 text-xs text-slate-500 whitespace-nowrap">
                           ${formatTimeAgo(item.selectedAt || item.createdAt)}
                         </td>
                       </tr>
