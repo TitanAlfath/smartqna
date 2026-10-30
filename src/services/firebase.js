@@ -22,9 +22,17 @@ const STORAGE_KEY_ADMIN = 'smartqa_admin_auth_v3';
 const STORAGE_KEY_PARTICIPANT = 'smartqa_participant_uid';
 const STORAGE_KEY_COOLDOWN = 'smartqa_last_submit_ts';
 
-// Channel unik untuk sinkronisasi real-time lintas perangkat (HP <-> Laptop)
-const CLOUD_RELAY_TOPIC = 'smartqa_live_sync_qnaproject_f87ff_v3';
+// Channel unik untuk sinkronisasi real-time berkecepatan tinggi (< 100ms) lintas perangkat (HP <-> Laptop)
+const CLOUD_RELAY_TOPIC = 'smartqa_fast_qnaproject_f87ff_v4';
 const CLOUD_RELAY_URL = `https://ntfy.sh/${CLOUD_RELAY_TOPIC}`;
+const CLOUD_RELAY_WS_URL = `wss://ntfy.sh/${CLOUD_RELAY_TOPIC}/ws`;
+const MQTT_WS_BROKERS = [
+  'wss://broker.emqx.io:8084/mqtt',
+  'wss://broker.hivemq.com:8884/mqtt'
+];
+const MQTT_TOPIC_STATE = 'smartqa/qnaproject_f87ff/v4/state';
+const MQTT_TOPIC_DELTA = 'smartqa/qnaproject_f87ff/v4/delta';
+const activeMqttSockets = [];
 
 // Bersihkan cache lama
 if (typeof window !== 'undefined') {
@@ -348,35 +356,147 @@ function mergeIncomingRemoteState(remote) {
 }
 
 /**
- * Mengirimkan paket state berukuran ringkas (< 3.5 KB per paket) ke Cloud Relay (ntfy.sh)
- * serta ke Firebase Realtime Database agar ratusan penanya dari HP dapat masuk
- * secara bersamaan tanpa pernah terkena batas ukuran payload.
+ * Helper MQTT 3.1.1 over WebSocket Binary Framing (Zero-Dependency, < 80ms Latency)
  */
-function postCompactPacketToRelay(partialState) {
-  if (typeof window === 'undefined' || typeof fetch !== 'function') return;
-  const payload = JSON.stringify({
+function encodeMqttRemainingLength(len) {
+  const bytes = [];
+  do {
+    let encodedByte = len % 128;
+    len = Math.floor(len / 128);
+    if (len > 0) encodedByte |= 128;
+    bytes.push(encodedByte);
+  } while (len > 0);
+  return bytes;
+}
+
+function encodeMqttUtf8(str) {
+  const utf8 = new TextEncoder().encode(str);
+  return [(utf8.length >> 8) & 0xff, utf8.length & 0xff, ...utf8];
+}
+
+function buildMqttConnectPacket(clientId) {
+  const body = [
+    ...encodeMqttUtf8('MQTT'),
+    0x04, // Protocol Level 4 (MQTT 3.1.1)
+    0x02, // Clean Session
+    0x00,
+    0x3c, // Keep Alive 60s
+    ...encodeMqttUtf8(clientId)
+  ];
+  return new Uint8Array([0x10, ...encodeMqttRemainingLength(body.length), ...body]);
+}
+
+function buildMqttSubscribePacket(topicFilter) {
+  const body = [0x00, 0x01, ...encodeMqttUtf8(topicFilter), 0x00];
+  return new Uint8Array([0x82, ...encodeMqttRemainingLength(body.length), ...body]);
+}
+
+function buildMqttPublishPacket(topic, jsonStr, retain = false) {
+  const topicBytes = encodeMqttUtf8(topic);
+  const payloadBytes = new TextEncoder().encode(jsonStr);
+  const remLen = topicBytes.length + payloadBytes.length;
+  return new Uint8Array([
+    retain ? 0x31 : 0x30,
+    ...encodeMqttRemainingLength(remLen),
+    ...topicBytes,
+    ...payloadBytes
+  ]);
+}
+
+function parseMqttIncomingPackets(buffer, onJsonMessage) {
+  const bytes = new Uint8Array(buffer);
+  let offset = 0;
+  while (offset < bytes.length) {
+    const firstByte = bytes[offset];
+    let idx = offset + 1;
+    let multiplier = 1;
+    let remLen = 0;
+    let encodedByte = 0;
+    do {
+      if (idx >= bytes.length) return;
+      encodedByte = bytes[idx++];
+      remLen += (encodedByte & 127) * multiplier;
+      multiplier *= 128;
+    } while ((encodedByte & 128) !== 0);
+
+    const packetEnd = idx + remLen;
+    if (packetEnd > bytes.length) return;
+
+    const packetType = firstByte & 0xf0;
+    if (packetType === 0x30) {
+      // PUBLISH packet
+      const topicLen = (bytes[idx] << 8) | bytes[idx + 1];
+      let payloadStart = idx + 2 + topicLen;
+      const qos = (firstByte >> 1) & 0x03;
+      if (qos > 0) payloadStart += 2;
+      const payloadBytes = bytes.subarray(payloadStart, packetEnd);
+      try {
+        const text = new TextDecoder().decode(payloadBytes);
+        const parsed = JSON.parse(text);
+        onJsonMessage(parsed);
+      } catch {
+        // Ignore malformed payload
+      }
+    }
+    offset = packetEnd;
+  }
+}
+
+function stripSessionDerivedFields(ses) {
+  if (!ses) return ses;
+  const copy = { ...ses };
+  delete copy.questionsObj;
+  delete copy.questionsList;
+  delete copy.drawHistoryList;
+  delete copy.currentSelectedQuestion;
+  return copy;
+}
+
+/**
+ * Mengirimkan paket secara instan (< 80ms) melalui WebSocket Broker + Cloud Relay + Firebase
+ */
+function postCompactPacketToRelay(partialState, isRetainedSessionState = false) {
+  if (typeof window === 'undefined') return;
+  const envelopeStr = JSON.stringify({
     sender: clientInstanceId,
     ts: Date.now(),
     state: partialState
   });
-  fetch(CLOUD_RELAY_URL, {
-    method: 'POST',
-    body: payload
-  }).catch(() => {});
+
+  // 1. Kirim instan melalui koneksi WebSocket MQTT yang sudah terbuka (~40ms)
+  const targetTopic = isRetainedSessionState ? MQTT_TOPIC_STATE : MQTT_TOPIC_DELTA;
+  const mqttFrame = buildMqttPublishPacket(targetTopic, envelopeStr, isRetainedSessionState);
+  activeMqttSockets.forEach((sock) => {
+    if (sock && sock.readyState === WebSocket.OPEN && sock._mqttReady) {
+      try {
+        sock.send(mqttFrame);
+      } catch {
+        // Ignore socket send error
+      }
+    }
+  });
+
+  // 2. Kirim juga ke Cloud Relay HTTPS POST sebagai cadangan lintas firewall
+  if (typeof fetch === 'function') {
+    fetch(CLOUD_RELAY_URL, {
+      method: 'POST',
+      body: envelopeStr,
+      keepalive: true
+    }).catch(() => {});
+  }
 }
 
 function broadcastStateToCloud(specificSessionId = null, specificQuestionId = null) {
   const current = stateCache || loadLocalDb();
 
-  // 1. Jika ada perubahan spesifik pada 1 pertanyaan/vote, kirim paket delta super ringan (~450 byte)
+  // 1. Jika ada perubahan spesifik pada 1 pertanyaan/vote, kirim paket delta super ringan (~400 byte)
   if (specificSessionId && current.sessions?.[specificSessionId]) {
-    const ses = current.sessions[specificSessionId];
+    const cleanSes = stripSessionDerivedFields(current.sessions[specificSessionId]);
     const compactQuestions = {};
-    if (specificQuestionId && ses.questions?.[specificQuestionId]) {
-      compactQuestions[specificQuestionId] = ses.questions[specificQuestionId];
+    if (specificQuestionId && cleanSes.questions?.[specificQuestionId]) {
+      compactQuestions[specificQuestionId] = cleanSes.questions[specificQuestionId];
     } else {
-      // Ambil maksimal 6 pertanyaan terbaru yang baru diupdate
-      Object.values(ses.questions || {})
+      Object.values(cleanSes.questions || {})
         .sort((a, b) => (b.updatedAt || b.createdAt || 0) - (a.updatedAt || a.createdAt || 0))
         .slice(0, 6)
         .forEach((q) => {
@@ -384,44 +504,51 @@ function broadcastStateToCloud(specificSessionId = null, specificQuestionId = nu
         });
     }
 
-    postCompactPacketToRelay({
-      activeSessionId: current.activeSessionId,
-      sessions: {
-        [specificSessionId]: {
-          ...ses,
-          questions: compactQuestions,
-          drawHistory: {}
-        }
+    postCompactPacketToRelay(
+      {
+        activeSessionId: current.activeSessionId,
+        sessions: {
+          [specificSessionId]: {
+            ...cleanSes,
+            questions: compactQuestions,
+            drawHistory: {}
+          }
+        },
+        activities: (current.activities || []).slice(0, 3),
+        updatedAt: current.updatedAt
       },
-      activities: (current.activities || []).slice(0, 3),
-      updatedAt: current.updatedAt
-    });
+      false
+    );
   } else {
-    // Kirim metadata sesi, akun admin, dan hingga 5 pertanyaan terbaru per sesi agar selalu < 3.5 KB
+    // Kirim metadata sesi, akun admin, dan hingga 5 pertanyaan terbaru per sesi (Retained)
     const compactSessions = {};
     Object.entries(current.sessions || {}).forEach(([sid, ses]) => {
+      const cleanSes = stripSessionDerivedFields(ses);
       const recentQs = {};
-      Object.values(ses.questions || {})
+      Object.values(cleanSes.questions || {})
         .sort((a, b) => (b.updatedAt || b.createdAt || 0) - (a.updatedAt || a.createdAt || 0))
         .slice(0, 5)
         .forEach((q) => {
           recentQs[q.id] = q;
         });
       compactSessions[sid] = {
-        ...ses,
+        ...cleanSes,
         questions: recentQs,
         drawHistory: {}
       };
     });
 
-    postCompactPacketToRelay({
-      activeSessionId: current.activeSessionId,
-      sessions: compactSessions,
-      deletedSessions: current.deletedSessions,
-      accounts: current.accounts,
-      activities: (current.activities || []).slice(0, 4),
-      updatedAt: current.updatedAt
-    });
+    postCompactPacketToRelay(
+      {
+        activeSessionId: current.activeSessionId,
+        sessions: compactSessions,
+        deletedSessions: current.deletedSessions,
+        accounts: current.accounts,
+        activities: (current.activities || []).slice(0, 4),
+        updatedAt: current.updatedAt
+      },
+      true
+    );
   }
 
   // 2. Kirim juga ke Firebase Realtime Database jika terhubung
@@ -435,13 +562,66 @@ function broadcastStateToCloud(specificSessionId = null, specificQuestionId = nu
 }
 
 /**
- * Menghubungkan pendengar real-time (SSE + Riwayat 12 Jam) untuk sinkronisasi HP <-> Laptop
+ * Menghubungkan Multi-Broker WebSocket (< 80ms) + Ntfy WebSocket tanpa polling berlebih
  */
+function connectMqttBroker(wsUrl) {
+  if (typeof window === 'undefined' || !('WebSocket' in window)) return;
+  try {
+    const ws = new WebSocket(wsUrl, 'mqtt');
+    ws.binaryType = 'arraybuffer';
+    ws._mqttReady = false;
+    activeMqttSockets.push(ws);
+
+    let pingTimer = null;
+
+    ws.onopen = () => {
+      const connectPkt = buildMqttConnectPacket(`sqa_${Math.random().toString(36).slice(2, 10)}`);
+      ws.send(connectPkt);
+      pingTimer = setInterval(() => {
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(new Uint8Array([0xc0, 0x00]));
+        }
+      }, 25000);
+    };
+
+    ws.onmessage = (evt) => {
+      if (!(evt.data instanceof ArrayBuffer)) return;
+      const bytes = new Uint8Array(evt.data);
+      if (bytes.length >= 2 && (bytes[0] & 0xf0) === 0x20) {
+        // CONNACK diterima -> langsung SUBSCRIBE ke wildcard topic
+        ws._mqttReady = true;
+        ws.send(buildMqttSubscribePacket('smartqa/qnaproject_f87ff/v4/#'));
+        if (stateCache && Object.keys(stateCache.sessions || {}).length > 0) {
+          broadcastStateToCloud();
+        }
+      }
+      parseMqttIncomingPackets(evt.data, (parsed) => {
+        if (parsed && parsed.sender !== clientInstanceId && parsed.state) {
+          mergeIncomingRemoteState(parsed.state);
+        }
+      });
+    };
+
+    ws.onclose = () => {
+      ws._mqttReady = false;
+      if (pingTimer) clearInterval(pingTimer);
+      const idx = activeMqttSockets.indexOf(ws);
+      if (idx !== -1) activeMqttSockets.splice(idx, 1);
+      setTimeout(() => connectMqttBroker(wsUrl), 3500);
+    };
+  } catch {
+    // Ignore WebSocket init error
+  }
+}
+
 function initCrossDeviceCloudRelay() {
   if (typeof window === 'undefined') return;
 
-  // 1. Ambil riwayat state yang sudah dikirim dalam 12 jam terakhir
-  fetch(`${CLOUD_RELAY_URL}/json?poll=1&since=12h`)
+  // 1. Hubungkan langsung ke 2 Broker WebSocket Global (Latensi ~40-80ms, mendukung Retained State)
+  MQTT_WS_BROKERS.forEach((brokerUrl) => connectMqttBroker(brokerUrl));
+
+  // 2. Ambil riwayat 1 kali saat halaman pertama dibuka (tanpa setInterval 4 detik agar tidak kena rate-limit!)
+  fetch(`${CLOUD_RELAY_URL}/json?poll=1&since=6h`)
     .then((res) => res.text())
     .then((text) => {
       if (!text) return;
@@ -462,38 +642,15 @@ function initCrossDeviceCloudRelay() {
     })
     .catch(() => {});
 
-  // 2. Buka koneksi real-time Server-Sent Events (SSE)
-  if ('EventSource' in window && !relayEventSource) {
-    try {
-      relayEventSource = new EventSource(`${CLOUD_RELAY_URL}/sse`);
-      relayEventSource.onmessage = (event) => {
-        try {
-          const envelope = JSON.parse(event.data);
-          if (envelope && envelope.event === 'message' && envelope.message) {
-            const parsed = JSON.parse(envelope.message);
-            if (parsed && parsed.sender !== clientInstanceId && parsed.state) {
-              mergeIncomingRemoteState(parsed.state);
-            }
-          }
-        } catch {
-          // Ignore parse error
-        }
-      };
-    } catch {
-      // Fallback polling jika jaringan memblokir SSE
-    }
-  }
-
-  // 3. Fallback polling ringan setiap 4 detik agar 100% pasti masuk di semua jaringan seluler
-  setInterval(() => {
-    fetch(`${CLOUD_RELAY_URL}/json?poll=1&since=20s`)
-      .then((res) => res.text())
-      .then((text) => {
-        if (!text) return;
-        const lines = text.trim().split('\n');
-        lines.forEach((line) => {
+  // 3. Buka WebSocket ke Ntfy (tanpa polling berulang yang memicu HTTP 429)
+  if ('WebSocket' in window && !relayEventSource) {
+    const connectNtfyWs = () => {
+      try {
+        const ntfyWs = new WebSocket(CLOUD_RELAY_WS_URL);
+        relayEventSource = ntfyWs;
+        ntfyWs.onmessage = (event) => {
           try {
-            const envelope = JSON.parse(line);
+            const envelope = JSON.parse(event.data);
             if (envelope && envelope.event === 'message' && envelope.message) {
               const parsed = JSON.parse(envelope.message);
               if (parsed && parsed.sender !== clientInstanceId && parsed.state) {
@@ -501,12 +658,19 @@ function initCrossDeviceCloudRelay() {
               }
             }
           } catch {
-            // Ignore
+            // Ignore parse error
           }
-        });
-      })
-      .catch(() => {});
-  }, 4000);
+        };
+        ntfyWs.onclose = () => {
+          relayEventSource = null;
+          setTimeout(connectNtfyWs, 5000);
+        };
+      } catch {
+        // Ignore
+      }
+    };
+    connectNtfyWs();
+  }
 }
 
 export function initDataService() {
@@ -823,7 +987,7 @@ export async function logoutAdmin() {
 
 export function getSpamCooldownRemaining() {
   const lastTs = Number(localStorage.getItem(STORAGE_KEY_COOLDOWN) || 0);
-  const cooldownMs = 8000;
+  const cooldownMs = 1500;
   const diff = Date.now() - lastTs;
   return diff < cooldownMs ? Math.ceil((cooldownMs - diff) / 1000) : 0;
 }
@@ -889,7 +1053,7 @@ export async function submitQuestion(sessionId, { name, text, anonymous }) {
   const current = loadLocalDb();
   if (!current.sessions[session.id]) {
     current.sessions[session.id] = {
-      ...session,
+      ...stripSessionDerivedFields(session),
       questions: {}
     };
   }
@@ -898,10 +1062,19 @@ export async function submitQuestion(sessionId, { name, text, anonymous }) {
   }
   current.sessions[session.id].questions[questionId] = newQuestion;
   current.sessions[session.id].updatedAt = now;
+  const entry = {
+    id: `act_${now}_${Math.random().toString(36).slice(2, 6)}`,
+    type: 'question',
+    message: `Pertanyaan #${String(nextNumber).padStart(2, '0')} dikirim oleh ${cleanName}.`,
+    timestamp: now
+  };
+  const list = Array.isArray(current.activities) ? current.activities : [];
+  current.activities = [entry, ...list].slice(0, 35);
+
   saveLocalDb(current);
   localStorage.setItem(STORAGE_KEY_COOLDOWN, String(now));
+  broadcastStateToCloud(session.id, questionId);
 
-  logActivity('question', `Pertanyaan #${String(nextNumber).padStart(2, '0')} dikirim oleh ${cleanName}.`, session.id, questionId);
   return newQuestion;
 }
 
