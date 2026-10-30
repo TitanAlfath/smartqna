@@ -1,13 +1,12 @@
 /**
- * SmartQ&A — 2. Participant Page (Clean Minimalist Liquid Glass UI)
+ * SmartQ&A — 2. Participant Page (Private & Focused Question Submission UI)
+ * Peserta bebas mengajukan pertanyaan tanpa melihat daftar pertanyaan dari audiens lain.
  */
 
 import {
   getAppState,
   getSessionById,
   submitQuestion,
-  toggleVoteQuestion,
-  hasParticipantVoted,
   getParticipantId
 } from '../services/firebase.js';
 import { escapeHtml, formatTimeAgo } from '../components/Navbar.js';
@@ -15,7 +14,6 @@ import { Icons } from '../components/Icons.js';
 import { openQRCodeModal } from '../components/QRCodeModal.js';
 import { showToast, navigateTo } from '../app.js';
 
-let participantFilter = 'latest'; // 'latest' | 'popular' | 'mine' | 'answered'
 let savedParticipantName = localStorage.getItem('smartqa_participant_name') || '';
 let isAnonChecked = false;
 let draftQuestionText = '';
@@ -71,24 +69,15 @@ export function renderParticipantPage() {
 
   const isSessionActive = session.status === 'active' && session.allowQuestions !== false;
   const myPid = getParticipantId();
-  const selectedQ = session.currentSelectedQuestion;
-
-  let questions = [...session.questionsList];
-  if (participantFilter === 'popular') {
-    questions.sort((a, b) => (b.votes || 0) - (a.votes || 0) || b.createdAt - a.createdAt);
-  } else if (participantFilter === 'mine') {
-    questions = questions.filter((q) => q.authorId === myPid);
-  } else if (participantFilter === 'answered') {
-    questions = questions.filter((q) => q.status === 'answered' || q.status === 'selected');
-  } else {
-    questions.sort((a, b) => b.createdAt - a.createdAt);
-  }
+  const myOwnQuestions = session.questionsList
+    .filter((q) => q.authorId === myPid)
+    .sort((a, b) => b.createdAt - a.createdAt);
 
   return `
-    <main class="max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-8 space-y-6">
+    <main class="max-w-2xl w-full mx-auto px-4 sm:px-6 py-5 sm:py-8 space-y-6">
       <!-- Top Session Header Card -->
       <section class="liquid-glass p-5 sm:p-7">
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div class="space-y-1">
             <h1 class="text-xl sm:text-2xl font-bold text-[#0F172A] tracking-tight">
               ${escapeHtml(session.name)}
@@ -99,14 +88,14 @@ export function renderParticipantPage() {
             </p>
           </div>
 
-          <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full md:w-auto">
+          <div class="flex items-center gap-2 shrink-0">
             ${
               state.sessionsList.length > 1
                 ? `
               <label for="participant-session-select" class="sr-only">Pilih Sesi</label>
               <select
                 id="participant-session-select"
-                class="ios-btn-glass px-4 py-2.5 text-xs font-semibold text-[#0F172A] focus:outline-none cursor-pointer w-full sm:w-auto max-w-full truncate"
+                class="ios-btn-glass px-3.5 py-2 text-xs font-semibold text-[#0F172A] focus:outline-none cursor-pointer max-w-[180px] truncate"
               >
                 ${state.sessionsList
                   .map(
@@ -125,222 +114,143 @@ export function renderParticipantPage() {
             <button
               type="button"
               id="participant-qr-btn"
-              class="ios-btn-glass px-4 py-2.5 text-xs font-semibold inline-flex items-center justify-center gap-1.5 w-full sm:w-auto shrink-0"
+              class="ios-btn-glass px-3.5 py-2 text-xs font-semibold inline-flex items-center justify-center gap-1.5 shrink-0"
             >
               ${Icons.qr('w-3.5 h-3.5 text-[#2563EB]')}
               <span>QR Sesi</span>
             </button>
           </div>
         </div>
-
-        <!-- Spotlight Banner (Jika ada pertanyaan yang sedang dipilih pemateri) -->
-        ${
-          selectedQ
-            ? `
-          <div class="mt-5 liquid-cell p-5 ring-2 ring-[#2563EB] bg-white/90">
-            <div class="flex flex-wrap items-center justify-between gap-2 mb-1.5">
-              <span class="text-xs font-bold text-[#2563EB]">
-                Pertanyaan Sedang Dibahas
-              </span>
-              <span class="text-xs text-slate-500 font-medium">
-                Oleh: <strong class="text-[#0F172A]">${escapeHtml(selectedQ.name)}</strong>
-              </span>
-            </div>
-            <p class="text-base sm:text-lg font-semibold text-[#0F172A] leading-snug">
-              "${escapeHtml(selectedQ.text)}"
-            </p>
-          </div>
-        `
-            : ''
-        }
       </section>
 
-      <!-- Workspace Grid: Left Composer (5 Col) + Right Feed (7 Col) -->
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        <!-- Left Column: Question Form -->
-        <section class="lg:col-span-5 liquid-glass p-6 sm:p-7 lg:sticky lg:top-24">
-          <div class="pb-4 border-b border-slate-200/70">
-            <h2 class="text-base font-bold text-[#0F172A] tracking-tight">Kirim Pertanyaan</h2>
-            <p class="text-xs text-slate-500 mt-0.5">Langsung tampil di layar pemateri secara real-time.</p>
-          </div>
+      <!-- Focused Question Submission Card (No Other Audience Questions Shown) -->
+      <section class="liquid-glass p-6 sm:p-8">
+        <div class="pb-4 border-b border-slate-200/70">
+          <h2 class="text-base sm:text-lg font-bold text-[#0F172A] tracking-tight">Ajukan Pertanyaan Anda</h2>
+          <p class="text-xs text-slate-500 mt-0.5">
+            Pertanyaan Anda dikirim langsung ke layar pemateri/moderator secara privat.
+          </p>
+        </div>
 
-          <div class="mt-5">
-            ${
-              isSessionActive
-                ? `
-              <form id="participant-question-form" class="space-y-4">
-                <div>
-                  <label for="input-participant-name" class="block text-xs font-semibold text-slate-700 mb-1.5 px-1">
-                    Nama Anda <span class="text-slate-400 font-normal">(Opsional bila anonim)</span>
-                  </label>
-                  <input
-                    type="text"
-                    id="input-participant-name"
-                    maxlength="60"
-                    value="${escapeHtml(savedParticipantName)}"
-                    ${isAnonChecked ? 'disabled' : ''}
-                    class="ios-input w-full px-4 py-2.5 text-sm text-[#0F172A] disabled:opacity-50"
-                  />
-                </div>
+        <div class="mt-5">
+          ${
+            isSessionActive
+              ? `
+            <form id="participant-question-form" class="space-y-4">
+              <div>
+                <label for="input-participant-name" class="block text-xs font-semibold text-slate-700 mb-1.5 px-1">
+                  Nama Anda <span class="text-slate-400 font-normal">(Opsional bila anonim)</span>
+                </label>
+                <input
+                  type="text"
+                  id="input-participant-name"
+                  maxlength="60"
+                  value="${escapeHtml(savedParticipantName)}"
+                  ${isAnonChecked ? 'disabled' : ''}
+                  class="ios-input w-full px-4 py-3 text-sm text-[#0F172A] disabled:opacity-50"
+                />
+              </div>
 
-                ${
-                  session.allowAnonymous !== false
-                    ? `
-                  <label class="liquid-cell flex items-center justify-between gap-3 cursor-pointer select-none p-3.5">
-                    <div>
-                      <span class="block text-xs font-semibold text-[#0F172A]">Kirim sebagai Peserta Anonim</span>
-                      <span class="block text-[11px] text-slate-500 mt-0.5">Sembunyikan nama Anda di layar publik</span>
-                    </div>
-                    <input
-                      type="checkbox"
-                      id="input-participant-anon"
-                      ${isAnonChecked ? 'checked' : ''}
-                      class="w-4 h-4 rounded text-[#2563EB] focus:ring-[#2563EB]"
-                    />
-                  </label>
-                `
-                    : ''
-                }
-
-                <div>
-                  <div class="flex items-center justify-between mb-1.5 px-1">
-                    <label for="input-participant-text" class="block text-xs font-semibold text-slate-700">
-                      Isi Pertanyaan *
-                    </label>
-                    <span id="char-counter" class="font-mono text-[11px] font-medium text-slate-400 tabular-nums">
-                      ${draftQuestionText.length} / 350
-                    </span>
+              ${
+                session.allowAnonymous !== false
+                  ? `
+                <label class="liquid-cell flex items-center justify-between gap-3 cursor-pointer select-none p-3.5">
+                  <div>
+                    <span class="block text-xs font-semibold text-[#0F172A]">Kirim sebagai Peserta Anonim</span>
+                    <span class="block text-[11px] text-slate-500 mt-0.5">Sembunyikan nama Anda saat pertanyaan ditampilkan</span>
                   </div>
-                  <textarea
-                    id="input-participant-text"
-                    rows="4"
-                    maxlength="350"
-                    required
-                    class="ios-input w-full px-4 py-3 text-sm text-[#0F172A] resize-none leading-relaxed"
-                  >${escapeHtml(draftQuestionText)}</textarea>
-                </div>
-
-                <button
-                  type="submit"
-                  id="btn-submit-question"
-                  class="ios-btn-primary w-full py-3.5 px-5 font-semibold text-xs sm:text-sm inline-flex items-center justify-center gap-2"
-                >
-                  <span>Kirim Pertanyaan Sekarang</span>
-                  ${Icons.arrowRight('w-4 h-4')}
-                </button>
-              </form>
-            `
-                : `
-              <div class="liquid-cell p-5 text-center space-y-2">
-                <h3 class="text-sm font-bold text-[#0F172A]">Penerimaan Pertanyaan Ditutup</h3>
-                <p class="text-xs text-slate-600 leading-relaxed">
-                  Pemateri sedang menutup pengiriman pertanyaan baru, namun Anda tetap dapat memberikan dukungan suara pada pertanyaan yang sudah ada.
-                </p>
-              </div>
-            `
-            }
-          </div>
-        </section>
-
-        <!-- Right Column: Questions Feed -->
-        <section class="lg:col-span-7 liquid-glass p-5 sm:p-7 space-y-5">
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-200/70">
-            <div>
-              <h2 class="text-base font-bold text-[#0F172A] tracking-tight">
-                Pertanyaan Audiens (${session.questionsList.length})
-              </h2>
-            </div>
-
-            <!-- Filter Tabs -->
-            <div class="ios-segmented grid grid-cols-4 sm:inline-flex items-center gap-1 w-full sm:w-auto">
-              ${[
-                { id: 'latest', label: 'Terbaru' },
-                { id: 'popular', label: 'Populer' },
-                { id: 'answered', label: 'Terjawab' },
-                { id: 'mine', label: 'Saya' }
-              ]
-                .map(
-                  (tab) => `
-                <button
-                  type="button"
-                  data-filter="${tab.id}"
-                  class="participant-filter-btn px-2 sm:px-3 py-1.5 text-xs font-semibold text-center transition-all ${
-                    participantFilter === tab.id
-                      ? 'ios-segment-active'
-                      : 'text-slate-600 hover:text-[#0F172A]'
-                  }"
-                >
-                  ${tab.label}
-                </button>
+                  <input
+                    type="checkbox"
+                    id="input-participant-anon"
+                    ${isAnonChecked ? 'checked' : ''}
+                    class="w-4 h-4 rounded text-[#2563EB] focus:ring-[#2563EB]"
+                  />
+                </label>
               `
-                )
-                .join('')}
-            </div>
-          </div>
+                  : ''
+              }
 
-          <!-- Question List -->
-          <div class="space-y-3">
-            ${
-              questions.length === 0
-                ? `
-              <div class="py-12 text-center">
-                <p class="text-sm font-semibold text-slate-600">Belum ada pertanyaan pada tampilan ini.</p>
-                <p class="text-xs text-slate-400 mt-1">Jadilah peserta pertama yang mengirimkan pertanyaan.</p>
+              <div>
+                <div class="flex items-center justify-between mb-1.5 px-1">
+                  <label for="input-participant-text" class="block text-xs font-semibold text-slate-700">
+                    Isi Pertanyaan *
+                  </label>
+                  <span id="char-counter" class="font-mono text-[11px] font-medium text-slate-400 tabular-nums">
+                    ${draftQuestionText.length} / 350
+                  </span>
+                </div>
+                <textarea
+                  id="input-participant-text"
+                  rows="4"
+                  maxlength="350"
+                  required
+                  class="ios-input w-full px-4 py-3 text-sm text-[#0F172A] resize-none leading-relaxed"
+                >${escapeHtml(draftQuestionText)}</textarea>
               </div>
+
+              <button
+                type="submit"
+                id="btn-submit-question"
+                class="ios-btn-primary w-full py-3.5 px-5 font-semibold text-xs sm:text-sm inline-flex items-center justify-center gap-2"
+              >
+                <span>Kirim Pertanyaan Sekarang</span>
+                ${Icons.arrowRight('w-4 h-4')}
+              </button>
+            </form>
+          `
+              : `
+            <div class="liquid-cell p-5 text-center space-y-2">
+              <h3 class="text-sm font-bold text-[#0F172A]">Penerimaan Pertanyaan Ditutup</h3>
+              <p class="text-xs text-slate-600 leading-relaxed">
+                Pemateri sedang menutup sementara pengiriman pertanyaan baru untuk sesi ini.
+              </p>
+            </div>
+          `
+          }
+        </div>
+      </section>
+
+      <!-- Hanya menampilkan riwayat pertanyaan milik peserta di perangkat ini sendiri (jika ada) -->
+      ${
+        myOwnQuestions.length > 0
+          ? `
+        <section class="liquid-glass p-5 sm:p-7 space-y-3.5">
+          <div class="pb-3 border-b border-slate-200/70 flex items-center justify-between">
+            <h3 class="text-sm font-bold text-[#0F172A]">
+              Pertanyaan yang Anda Kirim (${myOwnQuestions.length})
+            </h3>
+            <span class="text-[11px] text-slate-400">Hanya terlihat di perangkat Anda</span>
+          </div>
+          <div class="space-y-2.5">
+            ${myOwnQuestions
+              .map(
+                (q) => `
+              <article class="liquid-cell p-4">
+                <div class="flex items-center justify-between gap-2 text-xs text-slate-500">
+                  <strong class="text-[#0F172A]">${escapeHtml(q.name)}</strong>
+                  <span>${formatTimeAgo(q.createdAt)}</span>
+                </div>
+                <p class="mt-1.5 text-sm text-[#0F172A] leading-relaxed break-words">
+                  ${escapeHtml(q.text)}
+                </p>
+                <div class="mt-2 pt-2 border-t border-slate-200/50 text-[11px] text-emerald-700 font-medium">
+                  ${
+                    q.status === 'answered'
+                      ? 'Telah dijawab pemateri'
+                      : q.status === 'selected'
+                      ? 'Sedang dibahas di layar utama'
+                      : 'Terkirim ke pemateri'
+                  }
+                </div>
+              </article>
             `
-                : questions
-                    .map((q) => {
-                      const voted = hasParticipantVoted(session.id, q.id);
-                      const isSelected = q.status === 'selected';
-                      return `
-                        <article class="liquid-cell p-4 sm:p-5 ${
-                          isSelected ? 'ring-2 ring-[#2563EB] bg-white/95' : ''
-                        }">
-                          <div class="flex items-center justify-between gap-3">
-                            <span class="text-xs font-bold text-[#0F172A]">
-                              ${String(q.number).padStart(2, '0')}. ${escapeHtml(q.name)}
-                            </span>
-                            <span class="text-[11px] text-slate-400">
-                              ${formatTimeAgo(q.createdAt)}
-                            </span>
-                          </div>
-
-                          <p class="mt-2.5 text-sm sm:text-[15px] text-[#0F172A] leading-relaxed break-words">
-                            ${escapeHtml(q.text)}
-                          </p>
-
-                          <div class="mt-3.5 pt-3 border-t border-slate-200/60 flex items-center justify-between">
-                            <span class="text-xs font-medium text-slate-500">
-                              ${
-                                q.status === 'answered'
-                                  ? 'Selesai dijawab'
-                                  : q.status === 'selected'
-                                  ? 'Sedang dibahas'
-                                  : 'Menunggu giliran'
-                              }
-                            </span>
-
-                            <button
-                              type="button"
-                              data-vote-id="${escapeHtml(q.id)}"
-                              class="btn-vote-question inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
-                                voted
-                                  ? 'ios-btn-primary'
-                                  : 'ios-btn-glass hover:border-[#2563EB]/40'
-                              }"
-                            >
-                              ${Icons.upvote('w-3.5 h-3.5')}
-                              <span>${voted ? 'Didukung' : 'Dukung'} (${q.votes || 0})</span>
-                            </button>
-                          </div>
-                        </article>
-                      `;
-                    })
-                    .join('')
-            }
+              )
+              .join('')}
           </div>
         </section>
-      </div>
+      `
+          : ''
+      }
     </main>
   `;
 }
@@ -413,7 +323,7 @@ export function bindParticipantPageEvents() {
       if (submitBtn) submitBtn.disabled = true;
 
       try {
-        const created = await submitQuestion(session.id, {
+        await submitQuestion(session.id, {
           name: savedParticipantName,
           text: draftQuestionText,
           anonymous: isAnonChecked
@@ -421,7 +331,7 @@ export function bindParticipantPageEvents() {
         draftQuestionText = '';
         if (textInput) textInput.value = '';
         if (charCounter) charCounter.textContent = '0 / 350';
-        showToast(`Pertanyaan #${String(created.number).padStart(2, '0')} berhasil dikirim.`, 'success');
+        showToast('Pertanyaan Anda berhasil dikirim ke pemateri.', 'success');
       } catch (err) {
         showToast(err.message || 'Gagal mengirim pertanyaan.', 'error');
       } finally {
@@ -429,27 +339,4 @@ export function bindParticipantPageEvents() {
       }
     });
   }
-
-  document.querySelectorAll('.participant-filter-btn').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      participantFilter = btn.getAttribute('data-filter') || 'latest';
-      window.dispatchEvent(new CustomEvent('smartqa:rerender'));
-    });
-  });
-
-  document.querySelectorAll('.btn-vote-question').forEach((btn) => {
-    btn.addEventListener('click', async () => {
-      const qId = btn.getAttribute('data-vote-id');
-      if (!qId) return;
-      try {
-        const res = await toggleVoteQuestion(session.id, qId);
-        showToast(
-          res.voted ? 'Dukungan suara tercatat.' : 'Dukungan suara dibatalkan.',
-          'info'
-        );
-      } catch (err) {
-        showToast(err.message || 'Gagal memproses vote.', 'error');
-      }
-    });
-  });
 }

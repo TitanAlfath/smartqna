@@ -2,7 +2,7 @@
  * SmartQ&A — 1. Landing Page (Clean Liquid Glass & Live Audience Feed)
  */
 
-import { getAppState, getSessionById } from '../services/firebase.js';
+import { getAppState, getSessionById, isAdminAuthenticated } from '../services/firebase.js';
 import { escapeHtml, formatTimeAgo } from '../components/Navbar.js';
 import { Icons } from '../components/Icons.js';
 import { openQRCodeModal } from '../components/QRCodeModal.js';
@@ -10,6 +10,7 @@ import { navigateTo, showToast } from '../app.js';
 
 export function renderLandingPage() {
   const state = getAppState();
+  const isAdmin = isAdminAuthenticated();
   const activeSession = getSessionById();
   const totalQuestions = activeSession ? activeSession.questionsList.length : 0;
   const pendingCount = activeSession
@@ -18,7 +19,8 @@ export function renderLandingPage() {
   const answeredCount = activeSession
     ? activeSession.questionsList.filter((q) => q.status === 'answered').length
     : 0;
-  const recentQuestions = activeSession ? activeSession.questionsList.slice(0, 6) : [];
+  const recentQuestions =
+    isAdmin && activeSession ? activeSession.questionsList.slice(0, 6) : [];
 
   return `
     <div class="flex-1 flex flex-col">
