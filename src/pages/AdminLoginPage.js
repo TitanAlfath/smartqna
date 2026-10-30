@@ -2,7 +2,11 @@
  * SmartQ&A — 3. Admin Login Page (iOS Liquid Glass Authentication Sheet)
  */
 
-import { loginAdmin, getFirebaseConnectionInfo } from '../services/firebase.js';
+import {
+  loginAdmin,
+  getFirebaseConnectionInfo,
+  getSessionById
+} from '../services/firebase.js';
 import { Icons } from '../components/Icons.js';
 import { navigateTo, showToast } from '../app.js';
 
@@ -13,24 +17,24 @@ export function renderAdminLoginPage() {
     <main class="flex-1 flex items-center justify-center px-4 py-12">
       <div class="liquid-glass max-w-md w-full p-7 sm:p-9 animate-fade-in">
         <div class="text-center">
-          <div class="w-14 h-14 rounded-[20px] bg-gradient-to-b from-[#0F172A] to-slate-800 text-[#06B6D4] flex items-center justify-center mx-auto shadow-lg border border-white/20">
-            ${Icons.lock('w-6 h-6')}
+          <div class="w-16 h-16 rounded-[22px] bg-white/85 border border-white flex items-center justify-center mx-auto shadow-md p-2">
+            <img src="./assets/logo.png" alt="Logo SmartQ&A" class="w-full h-full object-contain drop-shadow-sm" />
           </div>
           <span class="inline-block mt-4 px-3 py-1 rounded-full text-[11px] font-semibold bg-[#2563EB]/10 text-[#2563EB]">
-            OTORISASI MODERATOR
+            PANEL PENYELENGGARA Q&amp;A
           </span>
           <h1 class="text-2xl font-bold text-[#0F172A] mt-2 tracking-tight">
-            Masuk ke Ruang Kontrol
+            Mulai &amp; Kelola Sesi Q&amp;A
           </h1>
           <p class="text-xs text-slate-500 mt-1 leading-relaxed">
-            Kelola antrean pertanyaan peserta secara real-time dan kendalikan layar undian proyektor.
+            Masuk untuk menambahkan sesi kegiatan baru, mengelola pertanyaan peserta, dan mengaktifkan layar undian.
           </p>
         </div>
 
         <form id="admin-login-form" class="mt-6 space-y-4">
           <div>
             <label for="admin-email" class="block text-xs font-semibold text-slate-700 mb-1.5 px-1">
-              Email Moderator
+              Email Admin / Pemateri
             </label>
             <input
               type="email"
@@ -62,7 +66,7 @@ export function renderAdminLoginPage() {
               id="btn-admin-login"
               class="ios-btn-primary w-full py-3.5 px-5 font-semibold text-sm inline-flex items-center justify-center gap-2"
             >
-              <span>Buka Ruang Kontrol</span>
+              <span>Mulai Q&amp;A Sekarang</span>
               ${Icons.arrowRight('w-4 h-4')}
             </button>
           </div>
@@ -70,7 +74,7 @@ export function renderAdminLoginPage() {
 
         <div class="mt-6 pt-4 border-t border-slate-200/70 flex items-center justify-between text-[11px] font-medium text-slate-500">
           <span>Mode: <strong class="text-[#0F172A]">${fbInfo.connected ? 'Firebase Auth' : 'Local Session'}</strong></span>
-          <span>Kredensial Siap Uji</span>
+          <span>Akses Admin Siap Pakai</span>
         </div>
       </div>
     </main>
@@ -90,8 +94,14 @@ export function bindAdminLoginPageEvents() {
 
     try {
       await loginAdmin(email, password);
-      showToast('Otorisasi berhasil. Selamat datang di Ruang Kontrol.', 'success');
-      navigateTo('/admin/dashboard');
+      const hasSession = Boolean(getSessionById());
+      showToast(
+        hasSession
+          ? 'Berhasil masuk ke Panel Q&A.'
+          : 'Berhasil masuk. Silakan tambahkan sesi Q&A pertama Anda.',
+        'success'
+      );
+      navigateTo(hasSession ? '/admin/dashboard' : '/admin/sessions');
     } catch (err) {
       showToast(err.message || 'Gagal melakukan autentikasi.', 'error');
     } finally {

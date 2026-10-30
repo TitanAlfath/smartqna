@@ -24,10 +24,17 @@ export function renderRandomDrawPage() {
   if (!session) {
     return `
       <main class="flex-1 bg-[#060A14] text-white flex items-center justify-center p-6 rounded-t-[32px] mt-2">
-        <div class="liquid-glass-dark p-8 text-center">
-          <h2 class="text-xl font-bold">Sesi Tidak Ditemukan</h2>
-          <a href="#/admin/sessions" class="ios-btn-primary inline-block mt-4 px-5 py-2.5 text-xs font-semibold">
-            Kelola Sesi
+        <div class="liquid-glass-dark p-8 sm:p-10 text-center space-y-4 max-w-md">
+          <img src="./assets/logo.png" alt="SmartQ&A" class="w-16 h-16 object-contain mx-auto drop-shadow-md" />
+          <div class="space-y-1">
+            <h2 class="text-xl font-bold tracking-tight">Belum Ada Sesi Q&amp;A Aktif</h2>
+            <p class="text-xs text-slate-300/80 leading-relaxed">
+              Buat sesi kegiatan terlebih dahulu sebelum membuka layar pengundian proyektor.
+            </p>
+          </div>
+          <a href="#/admin/sessions" class="ios-btn-primary inline-flex items-center gap-2 px-6 py-3 text-xs font-semibold">
+            ${Icons.plus('w-4 h-4')}
+            <span>Mulai Q&amp;A (Buat Sesi)</span>
           </a>
         </div>
       </main>

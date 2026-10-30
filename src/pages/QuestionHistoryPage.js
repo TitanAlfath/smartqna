@@ -15,8 +15,20 @@ export function renderQuestionHistoryPage() {
 
   if (!session) {
     return `
-      <main class="max-w-6xl mx-auto px-4 py-12 text-center">
-        <p class="text-xs text-slate-500">Belum ada data sesi tersedia.</p>
+      <main class="max-w-3xl mx-auto px-4 py-12 text-center">
+        <div class="liquid-glass p-8 sm:p-10 space-y-4">
+          <img src="./assets/logo.png" alt="SmartQ&A" class="w-16 h-16 object-contain mx-auto drop-shadow-sm" />
+          <div class="space-y-1">
+            <h2 class="text-xl font-bold text-[#0F172A] tracking-tight">Belum Ada Riwayat Sesi</h2>
+            <p class="text-xs text-slate-500 max-w-md mx-auto">
+              Tambahkan sesi kegiatan terlebih dahulu untuk melihat dan mengekspor riwayat pertanyaan.
+            </p>
+          </div>
+          <a href="#/admin/sessions" class="ios-btn-primary inline-flex items-center gap-2 px-6 py-3 text-xs font-semibold">
+            ${Icons.plus('w-4 h-4')}
+            <span>Mulai Q&amp;A (Buat Sesi)</span>
+          </a>
+        </div>
       </main>
     `;
   }

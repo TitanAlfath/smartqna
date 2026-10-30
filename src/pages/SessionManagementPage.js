@@ -14,7 +14,7 @@ import {
 import { escapeHtml, formatTimeAgo } from '../components/Navbar.js';
 import { Icons } from '../components/Icons.js';
 import { openQRCodeModal } from '../components/QRCodeModal.js';
-import { showToast } from '../app.js';
+import { showToast, navigateTo } from '../app.js';
 
 export function renderSessionManagementPage() {
   const state = getAppState();
@@ -22,16 +22,34 @@ export function renderSessionManagementPage() {
   return `
     <main class="max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-8 space-y-6">
       <!-- Liquid Glass Header -->
-      <section class="liquid-glass p-6 sm:p-7">
-        <span class="inline-block px-3 py-1 rounded-full text-[11px] font-semibold bg-[#2563EB]/10 text-[#2563EB]">
-          MANAJEMEN SESI KEGIATAN
-        </span>
-        <h1 class="text-xl sm:text-2xl font-bold text-[#0F172A] tracking-tight mt-2">
-          Kelola Sesi Seminar, Workshop &amp; Kuliah Umum
-        </h1>
-        <p class="text-xs text-slate-500 mt-1">
-          Setiap sesi memiliki kode unik, QR Code tersendiri, daftar pertanyaan, dan riwayat pengundian independen.
-        </p>
+      <section class="liquid-glass p-6 sm:p-7 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div class="flex items-center gap-3.5">
+          <img src="./assets/logo.png" alt="SmartQ&A" class="w-11 h-11 object-contain drop-shadow-sm shrink-0" />
+          <div>
+            <span class="inline-block px-3 py-0.5 rounded-full text-[11px] font-semibold bg-[#2563EB]/10 text-[#2563EB]">
+              MANAJEMEN SESI KEGIATAN
+            </span>
+            <h1 class="text-xl sm:text-2xl font-bold text-[#0F172A] tracking-tight mt-1">
+              Tambah &amp; Kelola Sesi Q&amp;A
+            </h1>
+            <p class="text-xs text-slate-500 mt-0.5">
+              Buat sesi kegiatan baru, atur kode sesi unik, dan bagikan QR Code kepada peserta.
+            </p>
+          </div>
+        </div>
+        ${
+          state.activeSessionId
+            ? `
+          <a
+            href="#/admin/dashboard"
+            class="ios-btn-primary px-5 py-2.5 text-xs font-semibold inline-flex items-center gap-2 self-start sm:self-auto"
+          >
+            <span>Buka Panel Q&amp;A</span>
+            ${Icons.arrowRight('w-3.5 h-3.5')}
+          </a>
+        `
+            : ''
+        }
       </section>
 
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
@@ -39,7 +57,7 @@ export function renderSessionManagementPage() {
         <section class="lg:col-span-5 liquid-glass p-6 sm:p-7">
           <div class="pb-4 border-b border-slate-200/70 flex items-center justify-between">
             <h2 class="text-base font-bold text-[#0F172A] tracking-tight">
-              Buat Sesi Baru
+              Buat Sesi Q&amp;A Baru
             </h2>
             <span class="w-8 h-8 rounded-full bg-[#2563EB]/10 text-[#2563EB] flex items-center justify-center">
               ${Icons.plus('w-4 h-4')}
@@ -53,19 +71,31 @@ export function renderSessionManagementPage() {
                 type="text"
                 name="name"
                 required
-                placeholder="Contoh: Kuliah Umum Artificial Intelligence 2026"
+                placeholder="Contoh: Seminar Nasional Teknologi 2026"
                 class="ios-input w-full px-4 py-2.5 text-sm text-[#0F172A]"
               />
             </div>
 
-            <div>
-              <label class="block text-xs font-semibold text-slate-700 mb-1.5 px-1">Nama Narasumber / Pemateri</label>
-              <input
-                type="text"
-                name="speaker"
-                placeholder="Contoh: Prof. Dr. Andi Pratama, M.T."
-                class="ios-input w-full px-4 py-2.5 text-sm text-[#0F172A]"
-              />
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1.5 px-1">Nama Pemateri</label>
+                <input
+                  type="text"
+                  name="speaker"
+                  placeholder="Contoh: Dr. Budi Santoso"
+                  class="ios-input w-full px-3.5 py-2.5 text-xs sm:text-sm text-[#0F172A]"
+                />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1.5 px-1">Kode Sesi (Opsional)</label>
+                <input
+                  type="text"
+                  name="customCode"
+                  maxlength="16"
+                  placeholder="Otomatis / SEM-01"
+                  class="ios-input w-full px-3.5 py-2.5 text-xs sm:text-sm font-mono uppercase text-[#0F172A] placeholder:font-sans placeholder:normal-case"
+                />
+              </div>
             </div>
 
             <div>
@@ -90,142 +120,159 @@ export function renderSessionManagementPage() {
 
             <button
               type="submit"
-              class="ios-btn-primary w-full py-3.5 px-5 font-semibold text-xs sm:text-sm"
+              class="ios-btn-primary w-full py-3.5 px-5 font-semibold text-xs sm:text-sm inline-flex items-center justify-center gap-2"
             >
-              Buat &amp; Simpan Sesi
+              ${Icons.plus('w-4 h-4')}
+              <span>Tambah &amp; Mulai Sesi Q&amp;A</span>
             </button>
           </form>
         </section>
 
         <!-- Right (7 Cols): Session Cards -->
         <section class="lg:col-span-7 space-y-4">
-          ${state.sessionsList
-            .map((ses) => {
-              const isPrimaryActive = ses.id === state.activeSessionId;
-              const qCount = Object.keys(ses.questions || {}).length;
-              const hCount = Object.keys(ses.drawHistory || {}).length;
+          ${
+            state.sessionsList.length === 0
+              ? `
+            <div class="liquid-glass p-10 text-center space-y-3">
+              <img src="./assets/logo.png" alt="SmartQ&A" class="w-16 h-16 object-contain mx-auto drop-shadow-sm" />
+              <h3 class="text-lg font-bold text-[#0F172A] tracking-tight">
+                Belum Ada Sesi Q&amp;A
+              </h3>
+              <p class="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
+                Seluruh daftar sesi masih kosong. Gunakan formulir <strong>Buat Sesi Q&amp;A Baru</strong> di sebelah kiri untuk membuat sesi kegiatan pertama Anda.
+              </p>
+            </div>
+          `
+              : state.sessionsList
+                  .map((ses) => {
+                    const isPrimaryActive = ses.id === state.activeSessionId;
+                    const qCount = Object.keys(ses.questions || {}).length;
+                    const hCount = Object.keys(ses.drawHistory || {}).length;
 
-              return `
-                <article class="liquid-glass p-6 transition ${
-                  isPrimaryActive ? 'ring-2 ring-[#2563EB]' : ''
-                }">
-                  <div class="flex flex-wrap items-center justify-between gap-2">
-                    <div class="flex items-center gap-2">
-                      <span class="font-mono text-xs font-bold px-3 py-1 rounded-full bg-[#0F172A] text-[#06B6D4]">
-                        ${escapeHtml(ses.id)}
-                      </span>
-                      ${
-                        isPrimaryActive
-                          ? `<span class="px-3 py-1 rounded-full text-[11px] font-semibold bg-[#2563EB]/15 text-[#2563EB]">★ Sesi Utama</span>`
-                          : ''
-                      }
-                      <span class="px-3 py-1 rounded-full text-[11px] font-semibold ${
-                        ses.status === 'active'
-                          ? 'bg-emerald-500/15 text-emerald-800 border border-emerald-500/20'
-                          : 'bg-slate-200/80 text-slate-600'
+                    return `
+                      <article class="liquid-glass p-6 transition ${
+                        isPrimaryActive ? 'ring-2 ring-[#2563EB]' : ''
                       }">
-                        ${ses.status === 'active' ? '● Aktif' : 'Selesai'}
-                      </span>
-                    </div>
-                    <span class="text-xs text-slate-400 font-mono">Dibuat ${formatTimeAgo(ses.createdAt)}</span>
-                  </div>
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                          <div class="flex items-center gap-2">
+                            <span class="font-mono text-xs font-bold px-3 py-1 rounded-full bg-[#0F172A] text-[#06B6D4]">
+                              ${escapeHtml(ses.id)}
+                            </span>
+                            ${
+                              isPrimaryActive
+                                ? `<span class="px-3 py-1 rounded-full text-[11px] font-semibold bg-[#2563EB]/15 text-[#2563EB]">★ Sesi Utama</span>`
+                                : ''
+                            }
+                            <span class="px-3 py-1 rounded-full text-[11px] font-semibold ${
+                              ses.status === 'active'
+                                ? 'bg-emerald-500/15 text-emerald-800 border border-emerald-500/20'
+                                : 'bg-slate-200/80 text-slate-600'
+                            }">
+                              ${ses.status === 'active' ? '● Aktif' : 'Selesai'}
+                            </span>
+                          </div>
+                          <span class="text-xs text-slate-400 font-mono">Dibuat ${formatTimeAgo(ses.createdAt)}</span>
+                        </div>
 
-                  <h3 class="text-lg font-bold text-[#0F172A] mt-3 tracking-tight">
-                    ${escapeHtml(ses.name)}
-                  </h3>
-                  <p class="text-xs font-semibold text-[#2563EB] mt-0.5">
-                    Narasumber: ${escapeHtml(ses.speaker || '-')}
-                  </p>
-                  <p class="text-xs text-slate-500 mt-1 leading-relaxed">
-                    ${escapeHtml(ses.description || '')}
-                  </p>
+                        <h3 class="text-lg font-bold text-[#0F172A] mt-3 tracking-tight">
+                          ${escapeHtml(ses.name)}
+                        </h3>
+                        <p class="text-xs font-semibold text-[#2563EB] mt-0.5">
+                          Pemateri: ${escapeHtml(ses.speaker || '-')}
+                        </p>
+                        <p class="text-xs text-slate-500 mt-1 leading-relaxed">
+                          ${escapeHtml(ses.description || '')}
+                        </p>
 
-                  <div class="mt-4 pt-4 border-t border-slate-200/70 flex flex-wrap items-center justify-between gap-3">
-                    <div class="flex items-center gap-4 text-xs font-semibold text-slate-600 font-mono tabular-nums">
-                      <span>${qCount} Pertanyaan</span>
-                      <span>•</span>
-                      <span>${hCount} Diundi</span>
-                    </div>
+                        <div class="mt-4 pt-4 border-t border-slate-200/70 flex flex-wrap items-center justify-between gap-3">
+                          <div class="flex items-center gap-4 text-xs font-semibold text-slate-600 font-mono tabular-nums">
+                            <span>${qCount} Pertanyaan</span>
+                            <span>•</span>
+                            <span>${hCount} Diundi</span>
+                          </div>
 
-                    <div class="flex flex-wrap items-center gap-2">
-                      <button
-                        type="button"
-                        data-qr-sid="${escapeHtml(ses.id)}"
-                        data-qr-sname="${escapeHtml(ses.name)}"
-                        class="btn-session-qr ios-btn-glass px-3.5 py-1.5 text-xs font-semibold inline-flex items-center gap-1.5"
-                      >
-                        ${Icons.qr('w-3.5 h-3.5 text-[#2563EB]')}
-                        <span>QR Code</span>
-                      </button>
+                          <div class="flex flex-wrap items-center gap-2">
+                            <button
+                              type="button"
+                              data-qr-sid="${escapeHtml(ses.id)}"
+                              data-qr-sname="${escapeHtml(ses.name)}"
+                              class="btn-session-qr ios-btn-glass px-3.5 py-1.5 text-xs font-semibold inline-flex items-center gap-1.5"
+                            >
+                              ${Icons.qr('w-3.5 h-3.5 text-[#2563EB]')}
+                              <span>QR Code</span>
+                            </button>
 
-                      <button
-                        type="button"
-                        data-edit-sid="${escapeHtml(ses.id)}"
-                        class="btn-session-edit ios-btn-glass px-3.5 py-1.5 text-xs font-semibold text-slate-700"
-                      >
-                        Edit Info
-                      </button>
+                            <button
+                              type="button"
+                              data-edit-sid="${escapeHtml(ses.id)}"
+                              class="btn-session-edit ios-btn-glass px-3.5 py-1.5 text-xs font-semibold text-slate-700"
+                            >
+                              Edit Info
+                            </button>
 
-                      ${
-                        !isPrimaryActive
-                          ? `
-                        <button
-                          type="button"
-                          data-activate-sid="${escapeHtml(ses.id)}"
-                          class="btn-session-activate ios-btn-primary px-4 py-1.5 text-xs font-semibold"
-                        >
-                          Jadikan Utama
-                        </button>
-                      `
-                          : ''
-                      }
+                            ${
+                              !isPrimaryActive
+                                ? `
+                              <button
+                                type="button"
+                                data-activate-sid="${escapeHtml(ses.id)}"
+                                class="btn-session-activate ios-btn-primary px-4 py-1.5 text-xs font-semibold"
+                              >
+                                Jadikan Utama
+                              </button>
+                            `
+                                : `
+                              <a
+                                href="#/admin/dashboard"
+                                class="ios-btn-primary px-4 py-1.5 text-xs font-semibold inline-flex items-center gap-1"
+                              >
+                                <span>Panel Q&amp;A</span>
+                                ${Icons.arrowRight('w-3 h-3')}
+                              </a>
+                            `
+                            }
 
-                      <button
-                        type="button"
-                        data-toggle-status-sid="${escapeHtml(ses.id)}"
-                        data-current-status="${escapeHtml(ses.status)}"
-                        class="btn-session-toggle-status ios-btn-glass px-3.5 py-1.5 text-xs font-semibold ${
-                          ses.status === 'active' ? 'text-amber-800' : 'text-emerald-700'
-                        }"
-                      >
-                        ${ses.status === 'active' ? 'Akhiri Sesi' : 'Buka Kembali'}
-                      </button>
+                            <button
+                              type="button"
+                              data-toggle-status-sid="${escapeHtml(ses.id)}"
+                              data-current-status="${escapeHtml(ses.status)}"
+                              class="btn-session-toggle-status ios-btn-glass px-3.5 py-1.5 text-xs font-semibold ${
+                                ses.status === 'active' ? 'text-amber-800' : 'text-emerald-700'
+                              }"
+                            >
+                              ${ses.status === 'active' ? 'Akhiri Sesi' : 'Buka Kembali'}
+                            </button>
 
-                      ${
-                        qCount > 0
-                          ? `
-                        <button
-                          type="button"
-                          data-clear-sid="${escapeHtml(ses.id)}"
-                          class="btn-session-clear ios-btn-glass px-3 py-1.5 text-xs font-semibold text-red-600"
-                          title="Kosongkan seluruh pertanyaan pada sesi ini"
-                        >
-                          Kosongkan (${qCount})
-                        </button>
-                      `
-                          : ''
-                      }
+                            ${
+                              qCount > 0
+                                ? `
+                              <button
+                                type="button"
+                                data-clear-sid="${escapeHtml(ses.id)}"
+                                class="btn-session-clear ios-btn-glass px-3 py-1.5 text-xs font-semibold text-red-600"
+                                title="Kosongkan seluruh pertanyaan pada sesi ini"
+                              >
+                                Kosongkan (${qCount})
+                              </button>
+                            `
+                                : ''
+                            }
 
-                      ${
-                        state.sessionsList.length > 1
-                          ? `
-                        <button
-                          type="button"
-                          data-delete-sid="${escapeHtml(ses.id)}"
-                          class="btn-session-delete p-2 rounded-full text-slate-400 hover:text-red-600 hover:bg-red-500/10 transition"
-                          title="Hapus sesi"
-                        >
-                          ${Icons.trash('w-3.5 h-3.5')}
-                        </button>
-                      `
-                          : ''
-                      }
-                    </div>
-                  </div>
-                </article>
-              `;
-            })
-            .join('')}
+                            <button
+                              type="button"
+                              data-delete-sid="${escapeHtml(ses.id)}"
+                              class="btn-session-delete p-2 rounded-full text-slate-400 hover:text-red-600 hover:bg-red-500/10 transition"
+                              title="Hapus sesi ini"
+                            >
+                              ${Icons.trash('w-3.5 h-3.5')}
+                            </button>
+                          </div>
+                        </div>
+                      </article>
+                    `;
+                  })
+                  .join('')
+          }
         </section>
       </div>
     </main>
@@ -243,6 +290,7 @@ export function bindSessionManagementPageEvents() {
           name: fd.get('name'),
           speaker: fd.get('speaker'),
           description: fd.get('description'),
+          customCode: fd.get('customCode'),
           allowAnonymous: fd.get('allowAnonymous') === 'on',
           setAsActive: fd.get('setAsActive') === 'on'
         });
@@ -314,7 +362,7 @@ export function bindSessionManagementPageEvents() {
       if (!sid) return;
       try {
         await deleteSessionById(sid);
-        showToast(`Sesi ${sid} dihapus.`, 'info');
+        showToast(`Sesi ${sid} berhasil dihapus.`, 'info');
       } catch (err) {
         showToast(err.message || 'Gagal menghapus sesi.', 'error');
       }

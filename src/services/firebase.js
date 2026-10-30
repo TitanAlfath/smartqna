@@ -1,7 +1,7 @@
 /**
  * SmartQ&A — Production Firebase Realtime Database & Authentication Service
- * Mendukung sinkronisasi real-time penuh melalui Firebase Realtime Database (Cloud)
- * serta sinkronisasi instan antar-tab (BroadcastChannel) untuk pengujian lokal.
+ * Dimulai dalam keadaan kosong (tanpa sesi/pertanyaan bawaan) sehingga Admin/Pemateri
+ * dapat menambahkan sesi kegiatan sendiri dari awal.
  */
 
 import { initializeApp, getApps } from 'firebase/app';
@@ -24,11 +24,17 @@ import {
 } from 'firebase/auth';
 import { pickSecureRandomIndex } from '../utils/randomDraw.js';
 
-const STORAGE_KEY_DB = 'smartqa_prod_db_v1';
+const STORAGE_KEY_DB = 'smartqa_clean_db_v2';
 const STORAGE_KEY_FB_CONFIG = 'smartqa_custom_firebase_config';
 const STORAGE_KEY_ADMIN = 'smartqa_admin_session';
 const STORAGE_KEY_PARTICIPANT = 'smartqa_participant_uid';
 const STORAGE_KEY_COOLDOWN = 'smartqa_last_submit_ts';
+
+// Bersihkan cache database lama yang masih menyimpan sesi seminar bawaan
+if (typeof window !== 'undefined') {
+  localStorage.removeItem('smartqa_realtime_db_v1');
+  localStorage.removeItem('smartqa_prod_db_v1');
+}
 
 let firebaseApp = null;
 let db = null;
@@ -115,44 +121,15 @@ export function getFirebaseConnectionInfo() {
 }
 
 /**
- * Struktur database awal bersih untuk produksi (tanpa pertanyaan dummy)
+ * Struktur database awal sepenuhnya kosong (0 sesi, 0 pertanyaan).
+ * Admin akan membuat sesi kegiatan baru sesuai kebutuhan acara.
  */
 function createInitialDatabaseState() {
-  const now = Date.now();
-  const defaultSessionId = 'SEM-2026';
   return {
-    activeSessionId: defaultSessionId,
-    sessions: {
-      [defaultSessionId]: {
-        id: defaultSessionId,
-        name: 'Sesi Tanya Jawab Seminar & Kuliah Umum',
-        speaker: 'Pemateri Utama',
-        description: 'Silakan kirimkan pertanyaan Anda melalui formulir peserta atau berikan dukungan suara pada pertanyaan yang tersedia.',
-        status: 'active',
-        allowQuestions: true,
-        allowAnonymous: true,
-        createdAt: now,
-        questions: {},
-        drawState: {
-          currentQuestionId: null,
-          isDrawing: false,
-          drawVersion: 0,
-          updatedAt: now
-        },
-        drawHistory: {}
-      }
-    },
-    votes: {
-      [defaultSessionId]: {}
-    },
-    activities: [
-      {
-        id: `act_${now}`,
-        type: 'session',
-        message: 'Sistem SmartQ&A siap digunakan untuk sesi tanya jawab.',
-        timestamp: now
-      }
-    ]
+    activeSessionId: null,
+    sessions: {},
+    votes: {},
+    activities: []
   };
 }
 
@@ -161,8 +138,13 @@ function loadLocalDb() {
     const raw = localStorage.getItem(STORAGE_KEY_DB);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (parsed && parsed.sessions) {
-        return parsed;
+      if (parsed && typeof parsed === 'object') {
+        return {
+          activeSessionId: parsed.activeSessionId || null,
+          sessions: parsed.sessions || {},
+          votes: parsed.votes || {},
+          activities: parsed.activities || []
+        };
       }
     }
   } catch {
@@ -208,15 +190,17 @@ export function initDataService() {
         rootRef,
         (snapshot) => {
           const val = snapshot.val();
-          if (val && val.sessions) {
-            stateCache = val;
-            notifyListeners();
+          if (val && typeof val === 'object') {
+            stateCache = {
+              activeSessionId: val.activeSessionId || null,
+              sessions: val.sessions || {},
+              votes: val.votes || {},
+              activities: val.activities || []
+            };
           } else {
-            const initial = createInitialDatabaseState();
-            set(rootRef, initial);
-            stateCache = initial;
-            notifyListeners();
+            stateCache = createInitialDatabaseState();
           }
+          notifyListeners();
         },
         (error) => {
           console.warn('Koneksi Firebase terputus atau Security Rules menolak akses, beralih ke sinkronisasi lokal:', error.message);
@@ -352,7 +336,7 @@ async function logActivity(type, message) {
 }
 
 /* ============================================================================
- * 1. AUTENTIKASI ADMINISTRATOR / PEMATERI
+ * 1. AUTENTIKASI PEMATERI / ADMIN
  * ========================================================================== */
 
 export function getCurrentAdmin() {
@@ -407,7 +391,7 @@ export async function loginAdmin(email, password) {
           notifyListeners();
           return adminData;
         } catch {
-          throw new Error('Email atau kata sandi moderator tidak valid di Firebase Auth.');
+          throw new Error('Email atau kata sandi tidak valid di Firebase Auth.');
         }
       }
       throw new Error(err.message || 'Gagal login ke Firebase Authentication.');
@@ -426,7 +410,7 @@ export async function loginAdmin(email, password) {
     loginAt: Date.now()
   };
   localStorage.setItem(STORAGE_KEY_ADMIN, JSON.stringify(adminData));
-  await logActivity('auth', `Moderator (${cleanEmail}) masuk ke ruang kontrol.`);
+  await logActivity('auth', `Pemateri/Admin (${cleanEmail}) membuka sesi Q&A.`);
   notifyListeners();
   return adminData;
 }
@@ -457,7 +441,7 @@ export function getSpamCooldownRemaining() {
 export async function submitQuestion(sessionId, { name, text, anonymous }) {
   const session = getSessionById(sessionId);
   if (!session) {
-    throw new Error('Sesi kegiatan tidak ditemukan.');
+    throw new Error('Sesi kegiatan belum tersedia.');
   }
   if (session.status !== 'active') {
     throw new Error('Sesi tanya jawab ini sudah berakhir.');
@@ -583,7 +567,7 @@ export async function toggleVoteQuestion(sessionId, questionId) {
 }
 
 /* ============================================================================
- * 4. MANUAL QUESTION SELECTION & MODERATION (ADMIN)
+ * 4. MANUAL QUESTION SELECTION & MODERATION
  * ========================================================================== */
 
 export async function updateQuestionStatus(sessionId, questionId, newStatus, method = 'manual') {
@@ -724,7 +708,7 @@ export async function deleteQuestion(sessionId, questionId) {
     saveLocalDb(current);
   }
 
-  await logActivity('delete', `Pertanyaan #${String(question.number).padStart(2, '0')} dihapus oleh moderator.`);
+  await logActivity('delete', `Pertanyaan #${String(question.number).padStart(2, '0')} dihapus.`);
 }
 
 /* ============================================================================
@@ -846,18 +830,24 @@ export async function resetSessionQuestionsToPending(sessionId) {
  * 6. SESSION MANAGEMENT
  * ========================================================================== */
 
-export async function createNewSession({ name, speaker, description, allowAnonymous = true, setAsActive = true }) {
+export async function createNewSession({ name, speaker, description, customCode, allowAnonymous = true, setAsActive = true }) {
   const cleanName = (name || '').trim();
   if (!cleanName) throw new Error('Nama kegiatan / sesi wajib diisi.');
 
   const randomCode = Math.random().toString(36).substring(2, 6).toUpperCase();
-  const sessionId = `SES-${randomCode}`;
+  const cleanCustom = (customCode || '').trim().toUpperCase().replace(/[^A-Z0-9-]/g, '');
+  const sessionId = cleanCustom || `SES-${randomCode}`;
   const now = Date.now();
+
+  const state = getAppState();
+  if (state.sessions[sessionId]) {
+    throw new Error(`Kode sesi "${sessionId}" sudah digunakan. Gunakan kode lain.`);
+  }
 
   const newSessionObj = {
     id: sessionId,
     name: cleanName,
-    speaker: (speaker || '').trim() || 'Pemateri Utama',
+    speaker: (speaker || '').trim() || 'Pemateri',
     description: (description || '').trim() || 'Sesi tanya jawab interaktif peserta dan pemateri.',
     status: 'active',
     allowQuestions: true,
@@ -875,13 +865,14 @@ export async function createNewSession({ name, speaker, description, allowAnonym
 
   if (isFirebaseConnected && db) {
     await set(ref(db, `sessions/${sessionId}`), newSessionObj);
-    if (setAsActive) {
+    if (setAsActive || !state.activeSessionId) {
       await set(ref(db, 'activeSessionId'), sessionId);
     }
   } else {
     const current = loadLocalDb();
+    if (!current.sessions) current.sessions = {};
     current.sessions[sessionId] = newSessionObj;
-    if (setAsActive) {
+    if (setAsActive || !current.activeSessionId) {
       current.activeSessionId = sessionId;
     }
     saveLocalDb(current);
@@ -968,23 +959,20 @@ export async function clearAllQuestionsInSession(sessionId) {
 
 export async function deleteSessionById(sessionId) {
   const state = getAppState();
-  if (state.sessionsList.length <= 1) {
-    throw new Error('Tidak dapat menghapus satu-satunya sesi yang tersisa.');
-  }
 
   if (isFirebaseConnected && db) {
     await remove(ref(db, `sessions/${sessionId}`));
     if (state.activeSessionId === sessionId) {
       const nextSession = state.sessionsList.find((s) => s.id !== sessionId);
-      if (nextSession) {
-        await set(ref(db, 'activeSessionId'), nextSession.id);
-      }
+      await set(ref(db, 'activeSessionId'), nextSession ? nextSession.id : null);
     }
   } else {
     const current = loadLocalDb();
-    delete current.sessions[sessionId];
+    if (current.sessions) {
+      delete current.sessions[sessionId];
+    }
     if (current.activeSessionId === sessionId) {
-      const remaining = Object.keys(current.sessions);
+      const remaining = Object.keys(current.sessions || {});
       current.activeSessionId = remaining[0] || null;
     }
     saveLocalDb(current);

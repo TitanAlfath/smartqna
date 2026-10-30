@@ -30,38 +30,38 @@ export function renderLandingPage() {
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
           <!-- Left Column (7 Cols): Cupertino Typography & Capsule Controls -->
           <div class="lg:col-span-7 space-y-6">
-            <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/75 border border-white shadow-sm backdrop-blur-md">
-              <span class="w-2 h-2 rounded-full bg-[#2563EB] animate-pulse"></span>
+            <div class="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-white/80 border border-white shadow-sm backdrop-blur-md">
+              <img src="./assets/logo.png" alt="SmartQ&A" class="w-5 h-5 object-contain" />
               <span class="text-[11px] font-semibold uppercase tracking-wider text-[#0F172A]">
-                Live Audience Q&amp;A System
+                Interactive Audience Q&amp;A System
               </span>
             </div>
 
             <h1 class="text-3xl sm:text-5xl font-bold tracking-tight text-[#0F172A] leading-[1.1]">
-              Diskusi seminar interaktif dalam antarmuka
+              Diskusi interaktif dalam antarmuka
               <span class="font-serif italic font-normal text-[#2563EB]">Liquid Glass</span>
               yang responsif.
             </h1>
 
             <p class="text-slate-600 text-base sm:text-lg leading-relaxed max-w-xl">
-              Peserta mengirim pertanyaan dan memberikan dukungan suara langsung dari kamera ponsel melalui QR Code. Moderator mengelola antrean secara real-time atau mengundi pertanyaan acak di layar panggung.
+              Peserta mengirim pertanyaan dan memberikan dukungan suara langsung dari ponsel melalui QR Code. Pemateri mengelola sesi tanya jawab secara real-time atau mengundi pertanyaan acak di layar panggung.
             </p>
 
             <!-- Tactile Capsule Buttons -->
             <div class="flex flex-wrap items-center gap-3 pt-1">
               <a
-                href="#/participant${activeSession ? `?session=${encodeURIComponent(activeSession.id)}` : ''}"
+                href="${activeSession ? '#/admin/dashboard' : '#/admin/sessions'}"
                 class="ios-btn-primary px-6 py-3.5 text-xs sm:text-sm font-semibold inline-flex items-center gap-2.5"
               >
-                <span>Kirim Pertanyaan Peserta</span>
+                <span>Mulai Q&amp;A</span>
                 ${Icons.arrowRight('w-4 h-4')}
               </a>
 
               <a
-                href="#/admin/dashboard"
+                href="#/participant${activeSession ? `?session=${encodeURIComponent(activeSession.id)}` : ''}"
                 class="ios-btn-glass px-5 py-3.5 text-xs sm:text-sm font-semibold inline-flex items-center gap-2"
               >
-                <span>Ruang Kontrol</span>
+                <span>Halaman Peserta</span>
               </a>
 
               <a
@@ -85,7 +85,7 @@ export function renderLandingPage() {
                 <input
                   type="text"
                   id="landing-session-code"
-                  placeholder="Masukkan kode sesi (misal: SEM-2026)"
+                  placeholder="Masukkan kode sesi Q&A..."
                   class="flex-1 bg-transparent py-2 text-xs text-[#0F172A] font-mono uppercase placeholder:normal-case placeholder:font-sans placeholder:text-slate-400 focus:outline-none"
                 />
                 <button
@@ -101,7 +101,7 @@ export function renderLandingPage() {
           <!-- Right Column (5 Cols): iPhone StandBy / Live Activity Dark Glass Widget -->
           <div class="lg:col-span-5">
             <div class="liquid-glass-dark text-white p-6 sm:p-7 relative overflow-hidden">
-              <!-- Subtle Top Specular Sheen -->
+              <!-- Top Status Header -->
               <div class="flex items-center justify-between gap-2 pb-4 border-b border-white/[0.1]">
                 <div class="flex items-center gap-2">
                   <span class="w-2.5 h-2.5 rounded-full ${
@@ -110,11 +110,11 @@ export function renderLandingPage() {
                       : 'bg-slate-500'
                   }"></span>
                   <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-300">
-                    Live Activity • Sesi Aktif
+                    Live Activity • Status Sesi
                   </span>
                 </div>
                 <span class="font-mono text-xs font-semibold px-3 py-1 rounded-full bg-white/[0.1] text-[#06B6D4] border border-white/[0.12]">
-                  ${activeSession ? escapeHtml(activeSession.id) : 'OFFLINE'}
+                  ${activeSession ? escapeHtml(activeSession.id) : 'BELUM ADA SESI'}
                 </span>
               </div>
 
@@ -127,7 +127,7 @@ export function renderLandingPage() {
                       ${escapeHtml(activeSession.name)}
                     </h2>
                     <p class="text-xs text-[#06B6D4] font-medium mt-1">
-                      ${escapeHtml(activeSession.speaker || 'Tim Pemateri')}
+                      ${escapeHtml(activeSession.speaker || 'Pemateri Utama')}
                     </p>
                     <p class="text-xs text-slate-300/80 mt-2 leading-relaxed line-clamp-2">
                       ${escapeHtml(activeSession.description || '')}
@@ -186,8 +186,29 @@ export function renderLandingPage() {
                 </div>
               `
                   : `
-                <div class="py-10 text-center text-slate-400 text-xs">
-                  Belum ada sesi aktif. Silakan masuk ke Ruang Kontrol untuk membuat sesi.
+                <div class="py-8 text-center space-y-4">
+                  <img
+                    src="./assets/logo.png"
+                    alt="SmartQ&A Logo"
+                    class="w-16 h-16 object-contain mx-auto drop-shadow-md"
+                  />
+                  <div class="space-y-1.5 max-w-xs mx-auto">
+                    <h2 class="text-base font-bold text-white tracking-tight">
+                      Belum Ada Sesi Q&amp;A Aktif
+                    </h2>
+                    <p class="text-xs text-slate-300/80 leading-relaxed">
+                      Sistem masih kosong. Tekan tombol <strong>Mulai Q&amp;A</strong> untuk menambahkan sesi kegiatan baru beserta QR Code peserta.
+                    </p>
+                  </div>
+                  <div class="pt-1">
+                    <a
+                      href="#/admin/sessions"
+                      class="ios-btn-primary py-3 px-6 text-xs font-semibold inline-flex items-center justify-center gap-2"
+                    >
+                      ${Icons.plus('w-4 h-4')}
+                      <span>Mulai Q&amp;A (Buat Sesi)</span>
+                    </a>
+                  </div>
                 </div>
               `
               }
@@ -214,7 +235,7 @@ export function renderLandingPage() {
                 Pengundian Pertanyaan Acak Siap Proyektor
               </h3>
               <p class="text-xs sm:text-sm text-slate-600 mt-2 leading-relaxed">
-                Dirancang untuk ditampilkan di layar utama aula seminar. Dilengkapi animasi perputaran pertanyaan yang halus, efek suara prosedural, serta penguncian transaksi database agar pertanyaan yang sudah terpilih tidak terundi kembali.
+                Dirancang untuk ditampilkan di layar utama acara. Dilengkapi animasi perputaran pertanyaan yang halus, efek suara prosedural, serta penguncian transaksi database agar pertanyaan yang sudah terpilih tidak terundi kembali.
               </p>
             </div>
           </div>
@@ -246,63 +267,79 @@ export function renderLandingPage() {
         <div class="liquid-glass p-6 sm:p-8">
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
             <div>
-              <h2 class="text-lg sm:text-xl font-bold text-[#0F172A] tracking-tight">Direktori Sesi Kegiatan</h2>
-              <p class="text-xs text-slate-500 mt-0.5">Pilih sesi aktif untuk bergabung atau lihat arsip sesi sebelumnya.</p>
+              <h2 class="text-lg sm:text-xl font-bold text-[#0F172A] tracking-tight">Direktori Sesi Q&amp;A</h2>
+              <p class="text-xs text-slate-500 mt-0.5">Daftar sesi tanya jawab yang telah dibuat oleh penyelenggara.</p>
             </div>
             <a
               href="#/admin/sessions"
-              class="ios-btn-glass px-4 py-2 text-xs font-semibold inline-flex items-center gap-1.5 self-start sm:self-auto"
+              class="ios-btn-primary px-4 py-2.5 text-xs font-semibold inline-flex items-center gap-1.5 self-start sm:self-auto"
             >
-              <span>Kelola Sesi</span>
-              ${Icons.arrowRight('w-3.5 h-3.5')}
+              ${Icons.plus('w-3.5 h-3.5')}
+              <span>Tambah Sesi Q&amp;A</span>
             </a>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            ${state.sessionsList
-              .map((ses) => {
-                const qCount = Object.keys(ses.questions || {}).length;
-                const isAct = ses.status === 'active';
-                return `
-                  <div class="liquid-cell p-5 flex flex-col justify-between gap-4">
-                    <div>
-                      <div class="flex items-center justify-between gap-2">
-                        <span class="font-mono text-xs font-semibold px-3 py-1 rounded-full bg-[#0F172A] text-[#06B6D4]">
-                          ${escapeHtml(ses.id)}
-                        </span>
-                        <span class="px-3 py-1 rounded-full text-[11px] font-semibold ${
-                          isAct
-                            ? 'bg-emerald-500/15 text-emerald-800 border border-emerald-500/20'
-                            : 'bg-slate-200/70 text-slate-600'
-                        }">
-                          ${isAct ? '● Sesi Aktif' : 'Selesai'}
-                        </span>
+          ${
+            state.sessionsList.length === 0
+              ? `
+            <div class="liquid-cell p-8 text-center space-y-3">
+              <img src="./assets/logo.png" alt="SmartQ&A" class="w-12 h-12 object-contain mx-auto opacity-90" />
+              <div>
+                <h3 class="text-sm font-bold text-[#0F172A]">Belum Ada Sesi Kegiatan</h3>
+                <p class="text-xs text-slate-500 mt-1 max-w-md mx-auto">
+                  Silakan klik tombol <strong>Mulai Q&amp;A</strong> atau <strong>Tambah Sesi Q&amp;A</strong> untuk membuat sesi pertama Anda.
+                </p>
+              </div>
+            </div>
+          `
+              : `
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              ${state.sessionsList
+                .map((ses) => {
+                  const qCount = Object.keys(ses.questions || {}).length;
+                  const isAct = ses.status === 'active';
+                  return `
+                    <div class="liquid-cell p-5 flex flex-col justify-between gap-4">
+                      <div>
+                        <div class="flex items-center justify-between gap-2">
+                          <span class="font-mono text-xs font-semibold px-3 py-1 rounded-full bg-[#0F172A] text-[#06B6D4]">
+                            ${escapeHtml(ses.id)}
+                          </span>
+                          <span class="px-3 py-1 rounded-full text-[11px] font-semibold ${
+                            isAct
+                              ? 'bg-emerald-500/15 text-emerald-800 border border-emerald-500/20'
+                              : 'bg-slate-200/70 text-slate-600'
+                          }">
+                            ${isAct ? '● Sesi Aktif' : 'Selesai'}
+                          </span>
+                        </div>
+                        <h3 class="font-bold text-base text-[#0F172A] mt-3 leading-snug">
+                          ${escapeHtml(ses.name)}
+                        </h3>
+                        <p class="text-xs text-slate-500 mt-1">
+                          ${escapeHtml(ses.speaker || '-')}
+                        </p>
                       </div>
-                      <h3 class="font-bold text-base text-[#0F172A] mt-3 leading-snug">
-                        ${escapeHtml(ses.name)}
-                      </h3>
-                      <p class="text-xs text-slate-500 mt-1">
-                        ${escapeHtml(ses.speaker || '-')}
-                      </p>
-                    </div>
 
-                    <div class="pt-3 border-t border-slate-200/60 flex items-center justify-between">
-                      <span class="text-xs font-semibold text-slate-600 font-mono">${qCount} Pertanyaan</span>
-                      <a
-                        href="#/participant?session=${encodeURIComponent(ses.id)}"
-                        class="${
-                          isAct ? 'ios-btn-primary' : 'ios-btn-glass'
-                        } px-4 py-2 text-xs font-semibold inline-flex items-center gap-1.5"
-                      >
-                        <span>${isAct ? 'Masuk Sesi' : 'Lihat Arsip'}</span>
-                        ${Icons.arrowUpRight('w-3.5 h-3.5')}
-                      </a>
+                      <div class="pt-3 border-t border-slate-200/60 flex items-center justify-between">
+                        <span class="text-xs font-semibold text-slate-600 font-mono">${qCount} Pertanyaan</span>
+                        <a
+                          href="#/participant?session=${encodeURIComponent(ses.id)}"
+                          class="${
+                            isAct ? 'ios-btn-primary' : 'ios-btn-glass'
+                          } px-4 py-2 text-xs font-semibold inline-flex items-center gap-1.5"
+                        >
+                          <span>${isAct ? 'Masuk Sesi' : 'Lihat Arsip'}</span>
+                          ${Icons.arrowUpRight('w-3.5 h-3.5')}
+                        </a>
+                      </div>
                     </div>
-                  </div>
-                `;
-              })
-              .join('')}
-          </div>
+                  `;
+                })
+                .join('')}
+            </div>
+          `
+          }
         </div>
       </section>
     </div>
@@ -332,7 +369,7 @@ export function bindLandingPageEvents() {
       }
       const state = getAppState();
       if (!state.sessions[code]) {
-        showToast(`Kode sesi "${code}" tidak ditemukan.`, 'error');
+        showToast(`Kode sesi "${code}" belum terdaftar.`, 'error');
         return;
       }
       navigateTo(`/participant?session=${encodeURIComponent(code)}`);

@@ -36,12 +36,23 @@ export function renderParticipantPage() {
   if (!session) {
     return `
       <main class="max-w-3xl mx-auto px-4 py-12 text-center">
-        <div class="liquid-glass p-8">
-          <h2 class="text-lg font-bold text-[#0F172A]">Sesi Tidak Ditemukan</h2>
-          <p class="text-xs text-slate-600 mt-1">Belum ada sesi tanya jawab yang tersedia saat ini.</p>
-          <a href="#/" class="ios-btn-primary inline-block mt-5 px-5 py-2.5 text-xs font-semibold">
-            Kembali ke Beranda
-          </a>
+        <div class="liquid-glass p-8 sm:p-10 space-y-4">
+          <img src="./assets/logo.png" alt="SmartQ&A" class="w-16 h-16 object-contain mx-auto drop-shadow-sm" />
+          <div class="space-y-1">
+            <h2 class="text-xl font-bold text-[#0F172A] tracking-tight">Belum Ada Sesi Q&amp;A Aktif</h2>
+            <p class="text-xs text-slate-600 max-w-md mx-auto leading-relaxed">
+              Saat ini belum ada sesi tanya jawab yang dibuka oleh penyelenggara. Jika Anda adalah admin/pemateri, klik tombol <strong>Mulai Q&amp;A</strong> di bawah ini.
+            </p>
+          </div>
+          <div class="flex flex-wrap items-center justify-center gap-2.5 pt-1">
+            <a href="#/admin/sessions" class="ios-btn-primary px-5 py-2.5 text-xs font-semibold inline-flex items-center gap-1.5">
+              ${Icons.plus('w-3.5 h-3.5')}
+              <span>Mulai Q&amp;A (Buat Sesi)</span>
+            </a>
+            <a href="#/" class="ios-btn-glass px-5 py-2.5 text-xs font-semibold">
+              Kembali ke Beranda
+            </a>
+          </div>
         </div>
       </main>
     `;

@@ -14,10 +14,10 @@ export function renderNavbar(currentPath) {
   const isAdminRoute = currentPath.startsWith('/admin') && currentPath !== '/admin/login';
 
   const adminNavLinks = [
-    { path: '/admin/dashboard', label: 'Moderation' },
-    { path: '/admin/draw', label: 'Stage Draw' },
-    { path: '/admin/sessions', label: 'Sessions' },
-    { path: '/admin/history', label: 'Archive' }
+    { path: '/admin/dashboard', label: 'Dashboard Q&A' },
+    { path: '/admin/draw', label: 'Undian Proyektor' },
+    { path: '/admin/sessions', label: 'Kelola Sesi' },
+    { path: '/admin/history', label: 'Riwayat & CSV' }
   ];
 
   return `
@@ -25,16 +25,18 @@ export function renderNavbar(currentPath) {
       <div class="max-w-5xl mx-auto flex flex-col items-center gap-2.5">
         <!-- Main iPhone Dynamic Island Capsule -->
         <div class="dynamic-island pointer-events-auto w-full px-3 sm:px-4 py-2 flex items-center justify-between gap-2 text-white">
-          <!-- Left: App Emblem & Live Session Activity Pill -->
+          <!-- Left: Custom Logo & Live Session Activity Pill -->
           <div class="flex items-center gap-2.5 min-w-0">
             <a
               href="#/"
-              class="flex items-center gap-2.5 pr-2.5 py-0.5 rounded-full hover:opacity-90 transition shrink-0 focus:outline-none"
+              class="flex items-center gap-2.5 pr-2 py-0.5 rounded-full hover:opacity-90 transition shrink-0 focus:outline-none"
             >
-              <span class="w-8 h-8 rounded-full bg-gradient-to-b from-[#3B82F6] to-[#2563EB] text-white font-semibold text-xs flex items-center justify-center shadow-inner border border-white/30">
-                Q
-              </span>
-              <span class="font-semibold text-sm tracking-tight text-white">
+              <img
+                src="./assets/logo.png"
+                alt="Logo SmartQ&A"
+                class="w-8 h-8 object-contain drop-shadow-sm shrink-0"
+              />
+              <span class="font-bold text-sm tracking-tight text-white">
                 Smart<span class="text-[#06B6D4]">Q&amp;A</span>
               </span>
             </a>
@@ -56,7 +58,12 @@ export function renderNavbar(currentPath) {
                 </span>
               </div>
             `
-                : ''
+                : `
+              <div class="hidden md:flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.06] border border-white/[0.1]">
+                <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+                <span class="text-[11px] text-slate-300 font-medium">Belum ada sesi aktif</span>
+              </div>
+            `
             }
           </div>
 
@@ -74,7 +81,7 @@ export function renderNavbar(currentPath) {
               }"
             >
               ${Icons.database('w-3.5 h-3.5 text-[#06B6D4]')}
-              <span class="hidden sm:inline">${fbInfo.connected ? 'iCloud / Firebase' : 'Live Sync'}</span>
+              <span class="hidden sm:inline">${fbInfo.connected ? 'Cloud Aktif' : 'Live Sync'}</span>
             </button>
 
             ${
@@ -100,7 +107,7 @@ export function renderNavbar(currentPath) {
                   : 'text-slate-300 hover:text-white hover:bg-white/[0.08]'
               }"
             >
-              Peserta
+               Tanya Jawab
             </a>
 
             ${
@@ -108,19 +115,19 @@ export function renderNavbar(currentPath) {
                 ? `
               <div class="flex items-center gap-1">
                 <a
-                  href="#/admin/dashboard"
+                  href="#${activeSession ? '/admin/dashboard' : '/admin/sessions'}"
                   class="px-3.5 py-1.5 rounded-full text-xs font-semibold transition ${
                     isAdminRoute
                       ? 'bg-[#2563EB] text-white shadow-[0_0_16px_rgba(37,99,235,0.5)] border border-white/25'
-                      : 'bg-white/[0.1] text-white hover:bg-white/[0.18]'
+                      : 'bg-white/[0.12] text-white hover:bg-white/[0.2]'
                   }"
                 >
-                  Kontrol
+                  ${activeSession ? 'Panel Q&A' : 'Mulai Q&A'}
                 </a>
                 <button
                   type="button"
                   id="nav-btn-logout"
-                  title="Keluar dari sesi Moderator"
+                  title="Keluar dari sesi Pemateri"
                   class="px-2.5 py-1.5 rounded-full text-xs text-slate-400 hover:text-red-300 hover:bg-red-500/15 transition"
                 >
                   Keluar
@@ -130,9 +137,10 @@ export function renderNavbar(currentPath) {
                 : `
               <a
                 href="#/admin/login"
-                class="px-3.5 py-1.5 rounded-full bg-[#2563EB] hover:bg-blue-500 text-white text-xs font-semibold transition border border-white/25 shadow-sm"
+                class="px-4 py-1.5 rounded-full bg-[#2563EB] hover:bg-blue-500 text-white text-xs font-semibold transition border border-white/25 shadow-sm inline-flex items-center gap-1.5"
               >
-                Moderator
+                <span>Mulai Q&amp;A</span>
+                ${Icons.arrowRight('w-3 h-3')}
               </a>
             `
             }
@@ -144,7 +152,7 @@ export function renderNavbar(currentPath) {
           isAdminRoute
             ? `
           <nav
-            aria-label="Navigasi Ruang Kontrol"
+            aria-label="Navigasi Panel Q&A"
             class="pointer-events-auto liquid-glass px-1.5 py-1.5 rounded-full inline-flex items-center gap-1 shadow-lg"
           >
             ${adminNavLinks
@@ -195,7 +203,7 @@ export function bindNavbarEvents() {
   if (logoutBtn) {
     logoutBtn.addEventListener('click', async () => {
       await logoutAdmin();
-      showToast('Sesi moderator telah diakhiri.', 'info');
+      showToast('Anda telah keluar dari panel Q&A.', 'info');
       navigateTo('/');
     });
   }

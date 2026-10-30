@@ -99,6 +99,7 @@ export function renderApp() {
     } py-6 px-4 sm:px-6 lg:px-8 text-xs">
       <div class="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
         <div class="flex items-center gap-2.5">
+          <img src="./assets/logo.png" alt="SmartQ&A" class="w-5 h-5 object-contain" />
           <span class="font-bold ${isDarkStageRoute ? 'text-white' : 'text-[#0F172A]'}">SmartQ&amp;A</span>
           <span>•</span>
           <span>Interactive Audience Question &amp; Answer System</span>
@@ -110,7 +111,7 @@ export function renderApp() {
               : ''
           }
           <a href="#/participant" class="hover:underline">Peserta</a>
-          <a href="#/admin/dashboard" class="hover:underline">Ruang Kontrol</a>
+          <a href="${activeSession ? '#/admin/dashboard' : '#/admin/sessions'}" class="hover:underline">Mulai Q&amp;A</a>
           <a href="#/admin/draw" class="hover:underline">Layar Proyektor</a>
         </div>
       </div>
