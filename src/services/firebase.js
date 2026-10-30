@@ -476,8 +476,23 @@ function postCompactPacketToRelay(partialState, isRetainedSessionState = false) 
     }
   });
 
-  // 2. Kirim juga ke Cloud Relay HTTPS POST sebagai cadangan lintas firewall
+  // 2. Kirim ke endpoint internal Vercel (/api/sync) jika di-deploy di Vercel
   if (typeof fetch === 'function') {
+    fetch('/api/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: envelopeStr,
+      keepalive: true
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data && data.ok && data.state) {
+          mergeIncomingRemoteState(data.state);
+        }
+      })
+      .catch(() => {});
+
+    // 3. Kirim juga ke Cloud Relay HTTPS POST sebagai cadangan lintas firewall
     fetch(CLOUD_RELAY_URL, {
       method: 'POST',
       body: envelopeStr,
@@ -619,6 +634,27 @@ function initCrossDeviceCloudRelay() {
 
   // 1. Hubungkan langsung ke 2 Broker WebSocket Global (Latensi ~40-80ms, mendukung Retained State)
   MQTT_WS_BROKERS.forEach((brokerUrl) => connectMqttBroker(brokerUrl));
+
+  // 2. Sinkronisasi dari endpoint internal Vercel (/api/sync) jika berjalan di Vercel
+  fetch('/api/sync')
+    .then((res) => (res.ok ? res.json() : null))
+    .then((data) => {
+      if (data && data.ok && data.state) {
+        mergeIncomingRemoteState(data.state);
+      }
+    })
+    .catch(() => {});
+
+  setInterval(() => {
+    fetch('/api/sync')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data && data.ok && data.state) {
+          mergeIncomingRemoteState(data.state);
+        }
+      })
+      .catch(() => {});
+  }, 2000);
 
   // 2. Ambil riwayat 1 kali saat halaman pertama dibuka (tanpa setInterval 4 detik agar tidak kena rate-limit!)
   fetch(`${CLOUD_RELAY_URL}/json?poll=1&since=6h`)
